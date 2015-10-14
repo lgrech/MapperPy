@@ -334,6 +334,17 @@ class MapperBaseTest(unittest.TestCase):
         assert_that(mapped_object_rev).is_instance_of(_TestClassSomeProperty1)
         assert_that(mapped_object_rev.some_property).is_none()
 
+        # given
+        mapper_strict = ObjectMapper(_TestClassSomeProperty1, _TestEmptyClass1).custom_mappings(
+            {"some_property": "non_existing_property"}).options(MapperOptions.fail_on_get_attr == True)
+
+        try:
+            # when
+            mapper_strict.map(_TestEmptyClass1())
+            self.fail("Should raise AttributeError")
+        except AttributeError as er:
+            assert_that(er.message).contains("non_existing_property")
+
 
 class _TestClassSomePropertyEmptyInit1(object):
     def __init__(self, some_property=None, some_property_02=None, some_property_03=None, unmapped_property1=None):
