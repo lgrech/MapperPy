@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='MapperPy',
-      version='0.4',
+      version='0.5.1',
       description='Automatic object mapping tool',
       author='Lukasz Grech',
       author_email='mapperpy@gmail.com',

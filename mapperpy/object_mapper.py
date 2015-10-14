@@ -91,19 +91,19 @@ class ObjectMapper(object):
             if not (attr_left and attr_right):
                 continue
 
-            attr_value = self.get_attribute(obj, attr_left)
+            attr_value = self.__get_attribute(obj, attr_left)
 
             if type(attr_value) in self._nested_mappers:
                 mapped_params_dict[attr_right] = self._nested_mappers[type(attr_value)].map(attr_value)
             else:
                 mapped_params_dict[attr_right] = attr_value
 
-    def get_attribute(self, obj, attr_name):
+    def __get_attribute(self, obj, attr_name):
         try:
             attr_value = getattr(obj, attr_name)
-        except AttributeError as er:
+        except Exception as ex:
             if self.__get_setting(MapperOptions.fail_on_get_attr, True):
-                raise er
+                raise ex
             return None
 
         return attr_value
