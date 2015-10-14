@@ -1,9 +1,9 @@
 import unittest
 from assertpy import assert_that
 
-from mapperpy import ObjectMapper
+from mapperpy import ObjectMapper, MapperOptions
 
-__author__ = 'LG'
+__author__ = 'lgrech'
 
 # validation whether implicit mapping works
 # test exception messages
@@ -12,15 +12,15 @@ __author__ = 'LG'
 class MapperBaseTest(unittest.TestCase):
 
     def test_map_empty_to_empty(self):
-        assert_that(ObjectMapper(_EmptyClass1, _EmptyClass2).map(_EmptyClass1())).is_instance_of(_EmptyClass2)
-        assert_that(ObjectMapper(_EmptyClass1, _EmptyClass2).map(_EmptyClass2())).is_instance_of(_EmptyClass1)
+        assert_that(ObjectMapper(_TestEmptyClass1, _TestEmptyClass2).map(_TestEmptyClass1())).is_instance_of(_TestEmptyClass2)
+        assert_that(ObjectMapper(_TestEmptyClass1, _TestEmptyClass2).map(_TestEmptyClass2())).is_instance_of(_TestEmptyClass1)
 
     def test_map_unknown_class_should_raise_exception(self):
         try:
-            ObjectMapper(_EmptyClass1, _EmptyClass2).map(_OtherClass())
+            ObjectMapper(_TestEmptyClass1, _TestEmptyClass2).map(_TestOtherClass())
             self.fail("Should raise ValueError")
         except ValueError as er:
-            assert_that(er.message).contains(_OtherClass.__name__)
+            assert_that(er.message).contains(_TestOtherClass.__name__)
 
     def test_map_one_explicit_property(self):
         # given
@@ -311,6 +311,29 @@ class MapperBaseTest(unittest.TestCase):
         assert_that(mapped_object.mapped_property).is_equal_to("some_valuesome_value_02")
         assert_that(mapped_object.unmapped_property2).is_equal_to("prefix_unmapped_value")
 
+    def test_map_with_option_fail_on_get_attr(self):
+        # given
+        mapper = ObjectMapper(_TestClassSomeProperty1, _TestEmptyClass1).custom_mappings(
+            {"some_property": "non_existing_property"}).options(MapperOptions.fail_on_get_attr == False)
+
+        # when
+        mapped_object = mapper.map(_TestEmptyClass1())
+
+        # then
+        assert_that(mapped_object).is_instance_of(_TestClassSomeProperty1)
+        assert_that(mapped_object.some_property).is_none()
+
+        # given
+        mapper_rev = ObjectMapper(_TestEmptyClass1, _TestClassSomeProperty1).custom_mappings(
+            {"non_existing_property": "some_property"}).options(MapperOptions.fail_on_get_attr == False)
+
+        # when
+        mapped_object_rev = mapper_rev.map(_TestEmptyClass1())
+
+        # then
+        assert_that(mapped_object_rev).is_instance_of(_TestClassSomeProperty1)
+        assert_that(mapped_object_rev.some_property).is_none()
+
 
 class _TestClassSomePropertyEmptyInit1(object):
     def __init__(self, some_property=None, some_property_02=None, some_property_03=None, unmapped_property1=None):
@@ -360,13 +383,13 @@ class _TestClassMappedPropertyEmptyInit(object):
         self.unmapped_property2 = unmapped_property2
 
 
-class _EmptyClass1(object):
+class _TestEmptyClass1(object):
     pass
 
 
-class _EmptyClass2(object):
+class _TestEmptyClass2(object):
     pass
 
 
-class _OtherClass(object):
+class _TestOtherClass(object):
     pass

@@ -7,6 +7,6 @@ setup(name='MapperPy',
       description='Automatic object mapping tool',
       author='Lukasz Grech',
       author_email='mapperpy@gmail.com',
-      url='https://github.com/grr07/MapperPy',
+      url='https://github.com/lgrech/MapperPy',
       packages=['mapperpy'],
       keywords='object mapping')

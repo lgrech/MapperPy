@@ -1,6 +1,7 @@
 import inspect
+from mapper_options import MapperOptions
 
-__author__ = 'LG'
+__author__ = 'lgrech'
 
 
 class ObjectMapper(object):
@@ -15,6 +16,7 @@ class ObjectMapper(object):
         self._nested_mappers = {}
         self._left_initializers = {}
         self._right_initializers = {}
+        self.__general_settings = {}
 
     @classmethod
     def from_prototype(cls, left_proto, right_proto):
@@ -55,6 +57,10 @@ class ObjectMapper(object):
         self._right_initializers.update(initializers_dict)
         return self
 
+    def options(self, (setting_name, setting_value)):
+        self.__general_settings[setting_name] = setting_value
+        return self
+
     @classmethod
     def _try_create_object(cls, class_, param_dict):
         try:
@@ -85,11 +91,22 @@ class ObjectMapper(object):
             if not (attr_left and attr_right):
                 continue
 
-            attr_value = getattr(obj, attr_left)
+            attr_value = self.get_attribute(obj, attr_left)
+
             if type(attr_value) in self._nested_mappers:
                 mapped_params_dict[attr_right] = self._nested_mappers[type(attr_value)].map(attr_value)
             else:
                 mapped_params_dict[attr_right] = attr_value
+
+    def get_attribute(self, obj, attr_name):
+        try:
+            attr_value = getattr(obj, attr_name)
+        except AttributeError as er:
+            if self.__get_setting(MapperOptions.fail_on_get_attr, True):
+                raise er
+            return None
+
+        return attr_value
 
     @classmethod
     def _get_actual_mapping(cls, obj, to_class, explicit_mapping, prototype_obj):
@@ -141,3 +158,9 @@ class ObjectMapper(object):
                 rev_mapping[right] = left
 
         return mapping, rev_mapping
+
+    def __get_setting(self, mapper_option, default_val):
+        if mapper_option.get_name() in self.__general_settings:
+            return self.__general_settings[mapper_option.get_name()]
+
+        return default_val
