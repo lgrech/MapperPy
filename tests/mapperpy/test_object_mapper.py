@@ -345,6 +345,63 @@ class MapperBaseTest(unittest.TestCase):
         except AttributeError as er:
             assert_that(er.message).contains("non_existing_property")
 
+    def test_map_attr_name_for_empty_classes_should_raise_exception(self):
+        # given
+        mapper = ObjectMapper(_TestEmptyClass1, _TestEmptyClass1)
+
+        with self.assertRaises(ValueError) as context:
+            # when
+            mapper.map_attr_name("unmapped_property")
+
+        # then
+        assert_that(context.exception.message).contains("unmapped_property")
+
+    def test_map_attr_name_for_unmapped_explicit_property_should_raise_exception(self):
+        # given
+        mapper = ObjectMapper(_TestClassSomeProperty1, _TestClassMappedProperty).custom_mappings(
+            {"some_property": "mapped_property"})
+
+        with self.assertRaises(ValueError) as context:
+            # when
+            mapper.map_attr_name("unmapped_property")
+
+        # then
+        assert_that(context.exception.message).contains("unmapped_property")
+
+    def test_map_attr_name_for_explicit_mapping(self):
+        # given
+        mapper = ObjectMapper(_TestClassSomeProperty1, _TestClassMappedProperty).custom_mappings(
+            {"some_property": "mapped_property"})
+
+        # then
+        assert_that(mapper.map_attr_name("some_property")).is_equal_to("mapped_property")
+
+        # then
+        assert_that(mapper.map_attr_name("mapped_property")).is_equal_to("some_property")
+
+    def test_map_attr_name_for_implicit_mapping(self):
+        # given
+        mapper = ObjectMapper(_TestClassSomePropertyEmptyInit1, _TestClassSomePropertyEmptyInit2)
+
+        # then
+        assert_that(mapper.map_attr_name("some_property")).is_equal_to("some_property")
+        assert_that(mapper.map_attr_name("some_property_02")).is_equal_to("some_property_02")
+        assert_that(mapper.map_attr_name("some_property_03")).is_equal_to("some_property_03")
+
+        with self.assertRaises(ValueError) as context:
+            # when
+            mapper.map_attr_name("unmapped_property1")
+
+        # then
+        assert_that(context.exception.message).contains("unmapped_property1")
+
+        with self.assertRaises(ValueError) as context:
+            # when
+            mapper.map_attr_name("unmapped_property2")
+
+        # then
+        assert_that(context.exception.message).contains("unmapped_property2")
+
 
 class _TestClassSomePropertyEmptyInit1(object):
     def __init__(self, some_property=None, some_property_02=None, some_property_03=None, unmapped_property1=None):

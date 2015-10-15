@@ -38,6 +38,22 @@ class ObjectMapper(object):
         else:
             raise ValueError("This mapper does not support {} class".format(obj.__class__.__name__))
 
+    def map_attr_name(self, attr_name):
+
+        if attr_name in self._explicit_mapping_from_left:
+            return self._explicit_mapping_from_left[attr_name]
+
+        if attr_name in self._explicit_mapping_from_right:
+            return self._explicit_mapping_from_right[attr_name]
+
+        left_proto = self.__try_get_prototype(self._left_prototype_obj, self._left_class)
+        if left_proto:
+            right_proto = self.__try_get_prototype(self._right_prototype_obj, self._right_class)
+            if right_proto and hasattr(left_proto, attr_name) and hasattr(right_proto, attr_name):
+                return attr_name
+
+        raise ValueError(attr_name)
+
     def custom_mappings(self, mapping_dict):
         mapping_from_left, mapping_from_right = self._get_explicit_mapping(mapping_dict)
         self._explicit_mapping_from_left.update(mapping_from_left)
@@ -111,10 +127,7 @@ class ObjectMapper(object):
     @classmethod
     def _get_actual_mapping(cls, obj, to_class, explicit_mapping, prototype_obj):
 
-        actual_prototype = prototype_obj
-
-        if not actual_prototype:
-            actual_prototype = cls._try_create_prototype(to_class)
+        actual_prototype = cls.__try_get_prototype(prototype_obj, to_class)
 
         common_attributes = cls._get_common_instance_attributes(obj, actual_prototype) if actual_prototype else []
 
@@ -122,6 +135,16 @@ class ObjectMapper(object):
         actual_mapping.update(explicit_mapping)
 
         return actual_mapping
+
+    @classmethod
+    def __try_get_prototype(cls, prototype_obj, for_class):
+
+        actual_prototype = prototype_obj
+
+        if not actual_prototype:
+            actual_prototype = cls._try_create_prototype(for_class)
+
+        return actual_prototype
 
     @classmethod
     def _try_create_prototype(cls, to_class):
