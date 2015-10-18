@@ -19,6 +19,10 @@ class ObjectMapper(object):
         self.__general_settings = {}
 
     @classmethod
+    def from_class(cls, left_class, right_class):
+        return ObjectMapper(left_class, right_class)
+
+    @classmethod
     def from_prototype(cls, left_proto, right_proto):
         return ObjectMapper(left_proto.__class__, right_proto.__class__, left_proto, right_proto)
 
