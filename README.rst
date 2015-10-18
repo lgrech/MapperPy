@@ -87,7 +87,7 @@ define nested mapper and then attach it to root mapper::
     nested_mapper = ObjectMapper.from_class(NestedClassA, NestedClassB)
 
     mapper = ObjectMapper.from_class(ClassA, ClassB).nested_mapper(nested_mapper)
-    
+
 Mapping attribute name
 -----------------------
 

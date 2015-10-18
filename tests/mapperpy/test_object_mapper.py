@@ -103,7 +103,7 @@ class MapperBaseTest(unittest.TestCase):
 
     def test_map_multiple_properties_implicit(self):
         # given
-        mapper = ObjectMapper(_TestClassSomePropertyEmptyInit1, _TestClassSomePropertyEmptyInit2)
+        mapper = ObjectMapper.from_class(_TestClassSomePropertyEmptyInit1, _TestClassSomePropertyEmptyInit2)
 
         # when
         mapped_object = mapper.map(_TestClassSomePropertyEmptyInit1(
@@ -111,6 +111,8 @@ class MapperBaseTest(unittest.TestCase):
             some_property_02="some_value_02",
             some_property_03="some_value_03",
             unmapped_property1="unmapped_value"))
+
+
 
         # then
         assert_that(mapped_object).is_instance_of(_TestClassSomePropertyEmptyInit2)
