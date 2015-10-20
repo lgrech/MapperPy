@@ -59,7 +59,7 @@ Mapper determines type of the instance automatically and maps it other type.
 Mapper customization
 ---------------------
 
-Custom mappings::
+Custom mappings (**custom_mappings()**)::
 
     mapper = mapper.custom_mappings({"some_property": "mapped_property", "my_property": "other_property"})
 
