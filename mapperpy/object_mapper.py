@@ -126,21 +126,22 @@ class ObjectMapper(object):
     @classmethod
     def __apply_conversion(cls, from_type, to_type, attr_value):
         if issubclass(from_type, Enum):
-            return cls.__get_mapping_from_enum(attr_value, to_type)
+            return cls.__get_conversion_from_enum(attr_value, to_type)
         elif issubclass(to_type, Enum):
-            return cls.__get_mapping_to_enum(attr_value, from_type, to_type)
+            return cls.__get_conversion_to_enum(attr_value, from_type, to_type)
         return attr_value
 
     @classmethod
-    def __get_mapping_to_enum(cls, attr_value, from_type, to_type):
+    def __get_conversion_to_enum(cls, attr_value, from_type, to_enum_type):
         if from_type == int:
-            return to_type(attr_value)
+            return to_enum_type(attr_value)
         elif from_type == str:
-            return getattr(to_type, attr_value)
+            # this tries to get enum item from Enum class
+            return getattr(to_enum_type, attr_value)
         return attr_value
 
     @classmethod
-    def __get_mapping_from_enum(cls, attr_value, to_type):
+    def __get_conversion_from_enum(cls, attr_value, to_type):
         if to_type == int:
             return attr_value.value
         elif to_type == str:
