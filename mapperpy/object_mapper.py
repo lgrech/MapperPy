@@ -99,6 +99,7 @@ class ObjectMapper(object):
         except AttributeError as er:
             raise AttributeError("Unknown attribute: {}".format(er.message))
 
+    @classmethod
     def __apply_initializers(self, mapped_params_dict, obj, initializers):
         for attr_name, init_func in initializers.items():
             mapped_params_dict[attr_name] = init_func(obj)
@@ -112,31 +113,39 @@ class ObjectMapper(object):
 
             attr_value = self.__get_attribute_value(obj_from, attr_name_from)
 
-            if type(attr_value) in self.__nested_mappers:
-                mapped_params_dict[attr_name_to] = self.__nested_mappers[type(attr_value)].map(attr_value)
-            elif isinstance(attr_value, Enum) and prototype_obj_to:
-                self.__get_mapping_from_enum(mapped_params_dict, attr_value, attr_name_to, prototype_obj_to)
-            elif prototype_obj_to and isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), Enum):
-                self.__get_mapping_to_enum(mapped_params_dict, attr_value, attr_name_to, prototype_obj_to)
+            from_type = type(attr_value)
+            to_type = type(self.__get_attribute_value(prototype_obj_to, attr_name_to)) if prototype_obj_to else None
+
+            if from_type in self.__nested_mappers:
+                mapped_params_dict[attr_name_to] = self.__nested_mappers[from_type].map(attr_value)
+            elif to_type and to_type != from_type:
+                mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, attr_value)
             else:
                 mapped_params_dict[attr_name_to] = attr_value
 
-    def __get_mapping_to_enum(self, mapped_params_dict, attr_value, attr_name_to, prototype_obj_to):
-        if isinstance(attr_value, int):
-            mapped_params_dict[attr_name_to] = type(self.__get_attribute_value(prototype_obj_to, attr_name_to))(attr_value)
-        elif isinstance(attr_value, str):
-            mapped_params_dict[attr_name_to] = getattr(
-                type(self.__get_attribute_value(prototype_obj_to, attr_name_to)), attr_value)
-        else:
-            mapped_params_dict[attr_name_to] = attr_value
+    @classmethod
+    def __apply_conversion(cls, from_type, to_type, attr_value):
+        if issubclass(from_type, Enum):
+            return cls.__get_mapping_from_enum(attr_value, to_type)
+        elif issubclass(to_type, Enum):
+            return cls.__get_mapping_to_enum(attr_value, from_type, to_type)
+        return attr_value
 
-    def __get_mapping_from_enum(self, mapped_params_dict, attr_value, attr_name_to, prototype_obj_to):
-        if isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), int):
-            mapped_params_dict[attr_name_to] = attr_value.value
-        elif isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), str):
-            mapped_params_dict[attr_name_to] = attr_value.name
-        else:
-            mapped_params_dict[attr_name_to] = attr_value
+    @classmethod
+    def __get_mapping_to_enum(cls, attr_value, from_type, to_type):
+        if from_type == int:
+            return to_type(attr_value)
+        elif from_type == str:
+            return getattr(to_type, attr_value)
+        return attr_value
+
+    @classmethod
+    def __get_mapping_from_enum(cls, attr_value, to_type):
+        if to_type == int:
+            return attr_value.value
+        elif to_type == str:
+            return attr_value.name
+        return attr_value
 
     def __get_attribute_value(self, obj, attr_name):
         try:
