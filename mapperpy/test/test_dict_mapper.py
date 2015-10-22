@@ -87,4 +87,38 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
         assert_that(mapped_object_rev['some_property_03']).is_equal_to("other_value_03")
         assert_that(mapped_object_rev).does_not_contain_key('unmapped_property1')
 
+    def test_map_implicit_with_prototype_obj(self):
+        # given
+        mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None), TestClassSomeProperty2(None).__dict__)
+
+        # when
+        mapped_object = mapper.map(TestClassSomeProperty1(
+            some_property="some_value",
+            some_property_02="some_value_02",
+            some_property_03="some_value_03",
+            unmapped_property1="unmapped_value"))
+
+        # then
+        assert_that(mapped_object).is_instance_of(dict)
+        assert_that(mapped_object['some_property']).is_equal_to("some_value")
+        assert_that(mapped_object['some_property_02']).is_equal_to("some_value_02")
+        assert_that(mapped_object['some_property_03']).is_equal_to("some_value_03")
+        assert_that(mapped_object).does_not_contain_key('unmapped_property2')
+
+        # when
+        mapped_object_rev = mapper.map(dict(
+            some_property="some_value",
+            some_property_02="some_value_02",
+            some_property_03="some_value_03",
+            unmapped_property2="unmapped_value"))
+
+        # then
+        assert_that(mapped_object_rev).is_instance_of(TestClassSomeProperty1)
+        assert_that(mapped_object_rev.some_property).is_equal_to("some_value")
+        assert_that(mapped_object_rev.some_property_02).is_equal_to("some_value_02")
+        assert_that(mapped_object_rev.some_property_03).is_equal_to("some_value_03")
+        assert_that(mapped_object_rev.unmapped_property1).is_none()
+
+
+
 

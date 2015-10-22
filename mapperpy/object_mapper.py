@@ -14,7 +14,8 @@ class ObjectMapper(object):
         self.__right_prototype_obj = self.__try_get_prototype(right_prototype_obj, self.__right_class)
         self.__explicit_mapping_from_left = {}
         self.__explicit_mapping_from_right = {}
-        self.__nested_mappers = {}
+        self.__nested_mappers_from_left = {}
+        self.__nested_mappers_from_right = {}
         self.__left_initializers = {}
         self.__right_initializers = {}
         self.__general_settings = {}
@@ -31,12 +32,16 @@ class ObjectMapper(object):
 
         if isinstance(obj, self.__left_class):
             param_dict = self.__get_mapped_params_dict(
-                obj, self.__explicit_mapping_from_left, self.__right_initializers, self.__right_prototype_obj)
+                obj, self.__explicit_mapping_from_left, self.__right_initializers, self.__nested_mappers_from_left,
+                self.__right_prototype_obj)
+
             return self.__try_create_object(self.__right_class, param_dict)
 
         elif isinstance(obj, self.__right_class):
             param_dict = self.__get_mapped_params_dict(
-                obj, self.__explicit_mapping_from_right, self.__left_initializers, self.__left_prototype_obj)
+                obj, self.__explicit_mapping_from_right, self.__left_initializers, self.__nested_mappers_from_right,
+                self.__left_prototype_obj)
+
             return self.__try_create_object(self.__left_class, param_dict)
 
         else:
@@ -63,8 +68,8 @@ class ObjectMapper(object):
         return self
 
     def nested_mapper(self, mapper):
-        self.__nested_mappers[mapper.__left_class] = mapper
-        self.__nested_mappers[mapper.__right_class] = mapper
+        self.__nested_mappers_from_left[mapper.__left_class] = mapper
+        self.__nested_mappers_from_right[mapper.__right_class] = mapper
         return self
 
     def left_initializers(self, initializers_dict):
@@ -87,13 +92,13 @@ class ObjectMapper(object):
             raise AttributeError("Error when initializing class {} with params: {}\n{}".format(
                 class_.__name__, param_dict, er.message))
 
-    def __get_mapped_params_dict(self, obj, explicit_mapping, initializers, prototype_obj):
+    def __get_mapped_params_dict(self, obj, explicit_mapping, initializers, nested_mappers, prototype_obj):
 
         actual_mapping = self.__get_actual_mapping(obj, explicit_mapping, prototype_obj)
 
         mapped_params_dict = {}
         try:
-            self.__apply_mapping(mapped_params_dict, obj, actual_mapping, prototype_obj)
+            self.__apply_mapping(mapped_params_dict, obj, actual_mapping, nested_mappers, prototype_obj)
             self.__apply_initializers(mapped_params_dict, obj, initializers)
             return mapped_params_dict
         except AttributeError as er:
@@ -104,7 +109,7 @@ class ObjectMapper(object):
         for attr_name, init_func in initializers.items():
             mapped_params_dict[attr_name] = init_func(obj)
 
-    def __apply_mapping(self, mapped_params_dict, obj_from, actual_mapping, prototype_obj_to):
+    def __apply_mapping(self, mapped_params_dict, obj_from, actual_mapping, nested_mappers, prototype_obj_to):
         for attr_name_from, attr_name_to in actual_mapping.items():
 
             # skip since mapping is suppressed by user (attribute_name = None)
@@ -116,8 +121,8 @@ class ObjectMapper(object):
             from_type = type(attr_value)
             to_type = type(self.__get_attribute_value(prototype_obj_to, attr_name_to)) if prototype_obj_to else None
 
-            if from_type in self.__nested_mappers:
-                mapped_params_dict[attr_name_to] = self.__nested_mappers[from_type].map(attr_value)
+            if from_type in nested_mappers:
+                mapped_params_dict[attr_name_to] = nested_mappers[from_type].map(attr_value)
             elif to_type and to_type != from_type:
                 mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, attr_value)
             else:
@@ -195,6 +200,10 @@ class ObjectMapper(object):
 
     @classmethod
     def __get_attributes(cls, obj):
+
+        if isinstance(obj, dict):
+            return obj.keys()
+
         attributes = inspect.getmembers(obj, lambda a: not(inspect.isroutine(a)))
         return [attr[0] for attr in attributes if not(attr[0].startswith('__') and attr[0].endswith('__'))]
 

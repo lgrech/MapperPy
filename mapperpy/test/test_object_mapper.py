@@ -139,9 +139,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_implicit_with_prototype_obj(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassSomeProperty2,
-                            left_prototype_obj=TestClassSomeProperty1(None),
-                            right_prototype_obj=TestClassSomeProperty2(None))
+        mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None), TestClassSomeProperty2(None))
 
         # when
         mapped_object = mapper.map(TestClassSomeProperty1(
@@ -208,8 +206,8 @@ class ObjectMapperTest(unittest.TestCase):
     def test_map_with_nested_explicit_mapper(self):
         # given
         root_mapper = ObjectMapper(TestClassSomeProperty1, TestClassSomeProperty2,
-                                 left_prototype_obj=TestClassSomeProperty1(None),
-                                 right_prototype_obj=TestClassSomeProperty2(None))
+                                   left_prototype_obj=TestClassSomeProperty1(None),
+                                   right_prototype_obj=TestClassSomeProperty2(None))
 
         root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
 
@@ -260,6 +258,23 @@ class ObjectMapperTest(unittest.TestCase):
         assert_that(nested_mapped_obj_rev.some_property_02).is_equal_to("nested_value_02")
         assert_that(nested_mapped_obj_rev.some_property_03).is_equal_to("nested_value_03")
         assert_that(nested_mapped_obj_rev.unmapped_property1).is_none()
+
+    def test_map_with_reversed_nested_mapper_should_not_use_nested_mapper(self):
+        # given
+        root_mapper = ObjectMapper.from_prototype(
+            TestClassSomeProperty1(TestClassSomePropertyEmptyInit1()),
+            TestClassSomeProperty2(TestClassSomePropertyEmptyInit2()))
+
+        root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit2, TestClassSomePropertyEmptyInit1))
+
+        # when
+        mapped_object = root_mapper.map(TestClassSomeProperty1(
+            some_property=TestClassSomePropertyEmptyInit1(some_property="nested_value")))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomeProperty2)
+        assert_that(mapped_object.some_property).is_instance_of(TestClassSomePropertyEmptyInit1)
+        assert_that(mapped_object.some_property.some_property).is_equal_to("nested_value")
 
     def test_suppress_implicit_mapping(self):
         # given
