@@ -116,32 +116,31 @@ class ObjectMapper(object):
                 mapped_params_dict[attr_name_to] = self.__nested_mappers[type(attr_value)].map(attr_value)
             elif isinstance(attr_value, Enum) and prototype_obj_to:
                 self.__get_mapping_from_enum(mapped_params_dict, attr_value, attr_name_to, prototype_obj_to)
-            elif prototype_obj_to and isinstance(getattr(prototype_obj_to, attr_name_to), Enum):
+            elif prototype_obj_to and isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), Enum):
                 self.__get_mapping_to_enum(mapped_params_dict, attr_value, attr_name_to, prototype_obj_to)
             else:
                 mapped_params_dict[attr_name_to] = attr_value
 
-    @classmethod
     def __get_mapping_to_enum(self, mapped_params_dict, attr_value, attr_name_to, prototype_obj_to):
         if isinstance(attr_value, int):
-            mapped_params_dict[attr_name_to] = type(getattr(prototype_obj_to, attr_name_to))(attr_value)
+            mapped_params_dict[attr_name_to] = type(self.__get_attribute_value(prototype_obj_to, attr_name_to))(attr_value)
         elif isinstance(attr_value, str):
-            mapped_params_dict[attr_name_to] = getattr(type(getattr(prototype_obj_to, attr_name_to)), attr_value)
+            mapped_params_dict[attr_name_to] = getattr(
+                type(self.__get_attribute_value(prototype_obj_to, attr_name_to)), attr_value)
         else:
             mapped_params_dict[attr_name_to] = attr_value
 
-    @classmethod
-    def __get_mapping_from_enum(cls, mapped_params_dict, attr_value, attr_name_to, prototype_obj_to):
-        if isinstance(getattr(prototype_obj_to, attr_name_to), int):
+    def __get_mapping_from_enum(self, mapped_params_dict, attr_value, attr_name_to, prototype_obj_to):
+        if isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), int):
             mapped_params_dict[attr_name_to] = attr_value.value
-        elif isinstance(getattr(prototype_obj_to, attr_name_to), str):
+        elif isinstance(self.__get_attribute_value(prototype_obj_to, attr_name_to), str):
             mapped_params_dict[attr_name_to] = attr_value.name
         else:
             mapped_params_dict[attr_name_to] = attr_value
 
     def __get_attribute_value(self, obj, attr_name):
         try:
-            attr_value = getattr(obj, attr_name)
+            attr_value = obj[attr_name] if isinstance(obj, dict) else getattr(obj, attr_name)
         except Exception as ex:
             if self.__get_setting(MapperOptions.fail_on_get_attr, True):
                 raise ex

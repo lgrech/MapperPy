@@ -11,11 +11,13 @@ __author__ = 'lgrech'
 # test exception messages
 
 
-class MapperBaseTest(unittest.TestCase):
+class ObjectMapperTest(unittest.TestCase):
 
     def test_map_empty_to_empty(self):
-        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass1())).is_instance_of(TestEmptyClass2)
-        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass2())).is_instance_of(TestEmptyClass1)
+        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass1())).\
+            is_instance_of(TestEmptyClass2)
+        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass2())).\
+            is_instance_of(TestEmptyClass1)
 
     def test_map_unknown_class_should_raise_exception(self):
         try:
@@ -113,8 +115,6 @@ class MapperBaseTest(unittest.TestCase):
             some_property_02="some_value_02",
             some_property_03="some_value_03",
             unmapped_property1="unmapped_value"))
-
-
 
         # then
         assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
