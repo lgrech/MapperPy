@@ -1,7 +1,7 @@
 import unittest
 from assertpy import assert_that
 
-from tests.mapperpy.common_test_classes import *
+from mapperpy.test.common_test_classes import *
 
 from enum import Enum
 from mapperpy import ObjectMapper
