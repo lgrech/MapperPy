@@ -68,9 +68,27 @@ class ObjectMapper(object):
         return self
 
     def nested_mapper(self, mapper):
-        self.__nested_mappers_from_left[mapper.__left_class] = mapper
-        self.__nested_mappers_from_right[mapper.__right_class] = mapper
+        self.__init_nested_mapper(self.__nested_mappers_from_left, mapper.__left_class)
+        self.__init_nested_mapper(self.__nested_mappers_from_right, mapper.__right_class)
+
+        if len(self.__nested_mappers_from_left[mapper.__left_class].intersection(
+                self.__nested_mappers_from_right[mapper.__right_class])) > 0:
+            raise ConfigurationException("Nested mapping {}->{} already defined for this mapper".format(
+                    mapper.__left_class.__name__, mapper.__right_class.__name__))
+
+        self.__add_nested_mapper(self.__nested_mappers_from_left, mapper.__left_class, mapper)
+        self.__add_nested_mapper(self.__nested_mappers_from_right, mapper.__right_class, mapper)
+
         return self
+
+    @classmethod
+    def __add_nested_mapper(cls, mappers_dict, from_class, mapper):
+        mappers_dict[from_class].add(mapper)
+
+    @classmethod
+    def __init_nested_mapper(cls, mappers_dict, from_class):
+        if from_class not in mappers_dict:
+            mappers_dict[from_class] = set()
 
     def left_initializers(self, initializers_dict):
         self.__left_initializers.update(initializers_dict)
@@ -122,11 +140,25 @@ class ObjectMapper(object):
             to_type = type(self.__get_attribute_value(prototype_obj_to, attr_name_to)) if prototype_obj_to else None
 
             if from_type in nested_mappers:
-                mapped_params_dict[attr_name_to] = nested_mappers[from_type].map(attr_value)
+                mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
+                    attr_value, from_type, attr_name_from, to_type, attr_name_to, nested_mappers)
             elif to_type and to_type != from_type:
                 mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, attr_value)
             else:
                 mapped_params_dict[attr_name_to] = attr_value
+
+    def __try_apply_nested_mapper(
+            self, attr_value, from_type, attr_name_from, to_type, attr_name_to, nested_mappers):
+
+        if len(nested_mappers[from_type]) == 1:
+            return list(nested_mappers[from_type])[0].map(attr_value)
+        # TODO - but refactor first
+        # elif to_type:
+        #     applicable_mappers = [mpr for mpr in nested_mappers[from_type] if mpr.
+
+
+        raise ConfigurationException("Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for "
+                                     "type {}".format(attr_name_from, attr_name_to, from_type.__name__))
 
     @classmethod
     def __apply_conversion(cls, from_type, to_type, attr_value):

@@ -228,6 +228,8 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
 
 
 
+
+
     # def test_map_from_dict_with_multiple_nested_mappers(self):
     #     # given
     #     root_mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None).__dict__, TestClassSomeProperty2(None))
