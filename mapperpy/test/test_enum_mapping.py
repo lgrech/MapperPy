@@ -128,6 +128,21 @@ class EnumMappingTest(unittest.TestCase):
         self.assertTrue(type(mapped_object.mapped_property) == SomeEnum)
         assert_that(mapped_object.mapped_property).is_equal_to(SomeEnum.some_enum_01)
 
+    def test_int_to_enum_explicit_dict_mapping_should_map_to_enum(self):
+        # given
+        mapper = ObjectMapper.\
+            from_prototype(dict(),
+                           TestClassMappedPropertyEmptyInit(mapped_property=SomeEnum.some_enum_02)). \
+            custom_mappings({'some_property': 'mapped_property'})
+
+        # when
+        mapped_object = mapper.map({'some_property': 1})
+
+        # then
+        assert_that(mapped_object).is_type_of(TestClassMappedPropertyEmptyInit)
+        self.assertTrue(type(mapped_object.mapped_property) == SomeEnum)
+        assert_that(mapped_object.mapped_property).is_equal_to(SomeEnum.some_enum_01)
+
 
 class SomeEnum(Enum):
     some_enum_01 = 1
