@@ -1,6 +1,7 @@
 import inspect
 from enum import Enum
-from mapper_options import MapperOptions
+from mapperpy.mapper_options import MapperOptions
+from mapperpy.exceptions import ConfigurationException
 
 __author__ = 'lgrech'
 
@@ -260,7 +261,3 @@ class ObjectMapper(object):
             return self.__general_settings[mapper_option.get_name()]
 
         return default_val
-
-
-class ConfigurationException(Exception):
-    pass
