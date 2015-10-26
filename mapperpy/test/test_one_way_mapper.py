@@ -209,35 +209,53 @@ class OneWayMapperTest(unittest.TestCase):
         assert_that(context.exception.message).contains("mapped_property")
         assert_that(context.exception.message).contains("TestClassSomePropertyEmptyInit1")
 
-    # TODO - but refactor first
-    # def test_map_with_multiple_nested_mappings_for_one_attribute_when_target_type_known(self):
-    #     # given
-    #     root_mapper = ObjectMapper.from_prototype(
-    #         TestClassSomeProperty1(None),
-    #         TestClassSomeProperty2(some_property=TestClassSomePropertyEmptyInit2()))
-    #
-    #     root_mapper.nested_mapper(
-    #         ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1(), TestClassSomeProperty2(None)))
-    #     root_mapper.nested_mapper(
-    #         ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1(), TestClassSomePropertyEmptyInit2()))
-    #
-    #     # when
-    #     mapped_object = root_mapper.map(
-    #         TestClassSomeProperty1(some_property=TestClassSomePropertyEmptyInit1(some_property_02="nested_value_02")))
-    #
-    #     # then
-    #     assert_that(mapped_object).is_instance_of(TestClassSomeProperty2)
-    #
-    #     nested_mapped_obj = mapped_object.some_property
-    #     assert_that(nested_mapped_obj).is_instance_of(TestClassSomePropertyEmptyInit2)
-    #     assert_that(nested_mapped_obj.some_property_02).is_equal_to("nested_value_02")
+    def test_map_with_multiple_nested_mappings_when_no_matching_mapper_for_target_type_should_raise_exception(self):
+        # given
+        root_mapper = OneWayMapper.for_target_prototype(
+            TestClassSomeProperty2(some_property=TestClassMappedPropertyEmptyInit()))
+
+        root_mapper.nested_mapper(
+            OneWayMapper.for_target_prototype(TestClassSomeProperty2(None)), TestClassSomePropertyEmptyInit1)
+        root_mapper.nested_mapper(
+            OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit2()), TestClassSomePropertyEmptyInit1)
+
+        with self.assertRaises(ConfigurationException) as context:
+            root_mapper.map(TestClassSomeProperty1(
+                some_property=TestClassSomePropertyEmptyInit1(some_property_02="nested_value_02")))
+
+        # then
+        assert_that(context.exception.message).contains("some_property")
+        assert_that(context.exception.message).contains("TestClassSomePropertyEmptyInit1")
+        assert_that(context.exception.message).contains("TestClassMappedPropertyEmptyInit")
+
+    def test_map_with_multiple_nested_mappings_for_one_attribute_when_target_type_known(self):
+        # given
+        root_mapper = OneWayMapper.for_target_prototype(
+            TestClassSomeProperty2(some_property=TestClassSomePropertyEmptyInit2()))
+
+        root_mapper.nested_mapper(
+            OneWayMapper.for_target_prototype(TestClassSomeProperty2(None)), TestClassSomePropertyEmptyInit1)
+        root_mapper.nested_mapper(
+            OneWayMapper.for_target_prototype( TestClassSomePropertyEmptyInit2()), TestClassSomePropertyEmptyInit1)
+
+        # when
+        mapped_object = root_mapper.map(
+            TestClassSomeProperty1(some_property=TestClassSomePropertyEmptyInit1(some_property_02="nested_value_02")))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomeProperty2)
+
+        nested_mapped_obj = mapped_object.some_property
+        assert_that(nested_mapped_obj).is_not_none()
+        assert_that(nested_mapped_obj).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(nested_mapped_obj.some_property_02).is_equal_to("nested_value_02")
 
     def test_map_with_reversed_nested_mapper_should_not_use_nested_mapper(self):
         # given
         root_mapper = OneWayMapper.for_target_prototype(TestClassSomeProperty2(TestClassSomePropertyEmptyInit2()))
 
         root_mapper.nested_mapper(
-            OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit1), TestClassSomePropertyEmptyInit2)
+            OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit1()), TestClassSomePropertyEmptyInit2)
 
         # when
         mapped_object = root_mapper.map(TestClassSomeProperty1(
@@ -345,3 +363,25 @@ class OneWayMapperTest(unittest.TestCase):
 
         # then
         assert_that(context.exception.message).contains("unmapped_property1")
+
+    def test_for_target_class_when_object_passed_should_raise_exception(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            OneWayMapper.for_target_class(object())
+
+        # then
+        assert_that(context.exception.message).contains("object")
+
+    def test_for_target_class(self):
+        assert_that(OneWayMapper.for_target_class(object)).is_not_none()
+
+    def test_for_target_prototype_when_class_passed_should_raise_exception(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            OneWayMapper.for_target_prototype(object)
+
+        # then
+        assert_that(context.exception.message).contains("object")
+
+    def test_for_target_prototype(self):
+        assert_that(OneWayMapper.for_target_prototype(object())).is_not_none()

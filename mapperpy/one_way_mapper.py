@@ -1,3 +1,4 @@
+from datetime import datetime, time
 import inspect
 from types import NoneType
 from enum import Enum
@@ -19,10 +20,16 @@ class OneWayMapper(object):
 
     @classmethod
     def for_target_class(cls, target_class):
+        if not isinstance(target_class, type):
+            raise ValueError("Class expected, instead got instance of {}".format(target_class.__class__.__name__))
+
         return OneWayMapper(target_class)
 
     @classmethod
     def for_target_prototype(cls, proto_obj):
+        if isinstance(proto_obj, type):
+            raise ValueError("Object instance expected, instead got class {}".format(proto_obj.__name__))
+
         return OneWayMapper(proto_obj.__class__, proto_obj)
 
     def map(self, obj):
@@ -98,7 +105,6 @@ class OneWayMapper(object):
     def __apply_mapping(self, mapped_params_dict, source_obj, actual_mapping):
 
         for attr_name_from, attr_name_to in actual_mapping.items():
-
             # skip since mapping is suppressed by user (attribute_name = None)
             if not (attr_name_from and attr_name_to):
                 continue
@@ -143,7 +149,22 @@ class OneWayMapper(object):
             return cls.__get_conversion_from_enum(attr_value, to_type)
         elif issubclass(to_type, Enum):
             return cls.__get_conversion_to_enum(attr_value, from_type, to_type)
+        elif issubclass(from_type, datetime) and issubclass(to_type, str):
+            return cls.__get_conversion_from_datetime(attr_value)
+        elif issubclass(from_type, str) and issubclass(to_type, datetime):
+            return cls.__get_conversion_to_datetime(attr_value)
         return attr_value
+
+    @classmethod
+    def __get_conversion_to_datetime(cls, attr_value):
+        try:
+            return datetime.strptime(attr_value, "%Y-%m-%dT%H:%M:%S.%f")
+        except ValueError as e:
+            raise ValueError("Could not create datetime object from string: {}. {}".format(attr_value, e.message))
+
+    @classmethod
+    def __get_conversion_from_datetime(cls, attr_value):
+        return attr_value.isoformat()
 
     @classmethod
     def __get_conversion_to_enum(cls, attr_value, from_type, to_enum_type):
