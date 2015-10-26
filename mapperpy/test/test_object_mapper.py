@@ -7,9 +7,6 @@ from mapperpy import ObjectMapper, MapperOptions, ConfigurationException
 
 __author__ = 'lgrech'
 
-# validation whether implicit mapping works
-# test exception messages
-
 
 class ObjectMapperTest(unittest.TestCase):
 

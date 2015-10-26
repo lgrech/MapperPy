@@ -1,6 +1,5 @@
-from datetime import datetime, time
+from datetime import datetime
 import inspect
-from types import NoneType
 from enum import Enum
 from mapperpy.mapper_options import MapperOptions
 from mapperpy.exceptions import ConfigurationException
