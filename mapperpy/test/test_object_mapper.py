@@ -14,21 +14,21 @@ __author__ = 'lgrech'
 class ObjectMapperTest(unittest.TestCase):
 
     def test_map_empty_to_empty(self):
-        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass1())).\
+        assert_that(ObjectMapper.from_class(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass1())).\
             is_instance_of(TestEmptyClass2)
-        assert_that(ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass2())).\
+        assert_that(ObjectMapper.from_class(TestEmptyClass1, TestEmptyClass2).map(TestEmptyClass2())).\
             is_instance_of(TestEmptyClass1)
 
     def test_map_unknown_class_should_raise_exception(self):
         try:
-            ObjectMapper(TestEmptyClass1, TestEmptyClass2).map(TestOtherClass())
+            ObjectMapper.from_class(TestEmptyClass1, TestEmptyClass2).map(TestOtherClass())
             self.fail("Should raise ValueError")
         except ValueError as er:
             assert_that(er.message).contains(TestOtherClass.__name__)
 
     def test_map_one_explicit_property(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
             {"some_property": "mapped_property"})
 
         # when
@@ -47,7 +47,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_unknown_property_should_raise_exception(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
             {"some_property": "unknown"})
 
         # when
@@ -59,7 +59,7 @@ class ObjectMapperTest(unittest.TestCase):
             assert_that(er.message).contains("unknown")
 
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
             {"unknown": "mapped_property"})
 
         # when
@@ -72,7 +72,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_multiple_explicit_properties(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
                             {"some_property": "mapped_property",
                              "some_property_02": "mapped_property_02",
                              "some_property_03": "mapped_property_03"})
@@ -171,7 +171,8 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_override_implicit_mapping(self):
         # given
-        mapper = ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+            custom_mappings(
                             {"some_property_02": "some_property_03",
                              "some_property_03": "some_property_02"})
 
@@ -203,14 +204,28 @@ class ObjectMapperTest(unittest.TestCase):
         assert_that(mapped_object_rev.some_property_03).is_equal_to("some_value_02")
         assert_that(mapped_object_rev.unmapped_property1).is_none()
 
+    def test_nested_mapper_when_wrong_param_type_should_raise_exception(self):
+        # given
+        root_mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassSomeProperty2)
+
+        # when
+        with self.assertRaises(ValueError) as context:
+            root_mapper.nested_mapper(object())
+
+        # then
+        assert_that(context.exception.message).contains(ObjectMapper.__name__)
+        assert_that(context.exception.message).contains("object")
+
     def test_nested_mapper_when_the_same_mapper_added_should_raise_exception(self):
         # given
-        root_mapper = ObjectMapper(TestClassSomeProperty1, TestClassSomeProperty2)
-        root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
+        root_mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassSomeProperty2)
+        root_mapper.nested_mapper(
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
 
         # when
         with self.assertRaises(ConfigurationException) as context:
-            root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
+            root_mapper.nested_mapper(
+                ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
 
         # then
         assert_that(context.exception.message).contains(TestClassSomePropertyEmptyInit1.__name__)
@@ -218,11 +233,10 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_with_nested_explicit_mapper(self):
         # given
-        root_mapper = ObjectMapper(TestClassSomeProperty1, TestClassSomeProperty2,
-                                   left_prototype_obj=TestClassSomeProperty1(None),
-                                   right_prototype_obj=TestClassSomeProperty2(None))
+        root_mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None), TestClassSomeProperty2(None))
 
-        root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2))
 
         # when
         mapped_object = root_mapper.map(TestClassSomeProperty1(
@@ -335,7 +349,8 @@ class ObjectMapperTest(unittest.TestCase):
             TestClassSomeProperty1(TestClassSomePropertyEmptyInit1()),
             TestClassSomeProperty2(TestClassSomePropertyEmptyInit2()))
 
-        root_mapper.nested_mapper(ObjectMapper(TestClassSomePropertyEmptyInit2, TestClassSomePropertyEmptyInit1))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit2, TestClassSomePropertyEmptyInit1))
 
         # when
         mapped_object = root_mapper.map(TestClassSomeProperty1(
@@ -348,8 +363,8 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_suppress_implicit_mapping(self):
         # given
-        mapper = ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).custom_mappings(
-            {"some_property": None})
+        mapper = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+            custom_mappings({"some_property": None})
 
         # when
         mapped_object = mapper.map(TestClassSomePropertyEmptyInit1(
@@ -372,7 +387,8 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_with_custom_left_initializers(self):
         # given
-        mapper = ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).left_initializers(
+        mapper = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+            left_initializers(
             {
                 "some_property": lambda obj: obj.mapped_property + obj.mapped_property_02,
                 "unmapped_property1": lambda obj: "prefix_{}".format(obj.unmapped_property2)})
@@ -387,7 +403,8 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_with_custom_right_initializers(self):
         # given
-        mapper = ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).right_initializers(
+        mapper = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+            right_initializers(
             {
                 "mapped_property": lambda obj: obj.some_property + obj.some_property_02,
                 "unmapped_property2": lambda obj: "prefix_{}".format(obj.unmapped_property1)})
@@ -402,7 +419,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_with_option_fail_on_get_attr(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestEmptyClass1).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestEmptyClass1).custom_mappings(
             {"some_property": "non_existing_property"}).options(MapperOptions.fail_on_get_attr == False)
 
         # when
@@ -413,7 +430,7 @@ class ObjectMapperTest(unittest.TestCase):
         assert_that(mapped_object.some_property).is_none()
 
         # given
-        mapper_rev = ObjectMapper(TestEmptyClass1, TestClassSomeProperty1).custom_mappings(
+        mapper_rev = ObjectMapper.from_class(TestEmptyClass1, TestClassSomeProperty1).custom_mappings(
             {"non_existing_property": "some_property"}).options(MapperOptions.fail_on_get_attr == False)
 
         # when
@@ -424,7 +441,7 @@ class ObjectMapperTest(unittest.TestCase):
         assert_that(mapped_object_rev.some_property).is_none()
 
         # given
-        mapper_strict = ObjectMapper(TestClassSomeProperty1, TestEmptyClass1).custom_mappings(
+        mapper_strict = ObjectMapper.from_class(TestClassSomeProperty1, TestEmptyClass1).custom_mappings(
             {"some_property": "non_existing_property"}).options(MapperOptions.fail_on_get_attr == True)
 
         try:
@@ -436,7 +453,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_attr_name_for_empty_classes_should_raise_exception(self):
         # given
-        mapper = ObjectMapper(TestEmptyClass1, TestEmptyClass1)
+        mapper = ObjectMapper.from_class(TestEmptyClass1, TestEmptyClass1)
 
         with self.assertRaises(ValueError) as context:
             # when
@@ -447,7 +464,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_attr_name_for_unmapped_explicit_property_should_raise_exception(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
             {"some_property": "mapped_property"})
 
         with self.assertRaises(ValueError) as context:
@@ -459,7 +476,7 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_attr_name_for_explicit_mapping(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, TestClassMappedProperty).custom_mappings(
             {"some_property": "mapped_property"})
 
         # then
@@ -470,22 +487,22 @@ class ObjectMapperTest(unittest.TestCase):
 
     def test_map_attr_name_for_implicit_mapping(self):
         # given
-        mapper = ObjectMapper(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2)
+        mapper = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2)
 
         # then
         assert_that(mapper.map_attr_name("some_property")).is_equal_to("some_property")
         assert_that(mapper.map_attr_name("some_property_02")).is_equal_to("some_property_02")
         assert_that(mapper.map_attr_name("some_property_03")).is_equal_to("some_property_03")
 
+        # when
         with self.assertRaises(ValueError) as context:
-            # when
             mapper.map_attr_name("unmapped_property1")
 
         # then
         assert_that(context.exception.message).contains("unmapped_property1")
 
+        # when
         with self.assertRaises(ValueError) as context:
-            # when
             mapper.map_attr_name("unmapped_property2")
 
         # then

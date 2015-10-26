@@ -1,7 +1,6 @@
 import unittest
 from assertpy import assert_that
 
-from mapperpy.object_mapper import ConfigurationException
 from mapperpy.test.common_test_classes import *
 
 from mapperpy import ObjectMapper
@@ -12,12 +11,12 @@ __author__ = 'lgrech'
 class ObjectMapperDictMappingTest(unittest.TestCase):
 
     def test_map_empty_to_empty_dict(self):
-        assert_that(ObjectMapper(TestEmptyClass1, dict).map(TestEmptyClass1())).is_instance_of(dict)
-        assert_that(ObjectMapper(TestEmptyClass1, dict).map({})).is_instance_of(TestEmptyClass1)
+        assert_that(ObjectMapper.from_class(TestEmptyClass1, dict).map(TestEmptyClass1())).is_instance_of(dict)
+        assert_that(ObjectMapper.from_class(TestEmptyClass1, dict).map({})).is_instance_of(TestEmptyClass1)
 
     def test_map_one_explicit_property(self):
         # given
-        mapper = ObjectMapper(TestClassSomeProperty1, dict).custom_mappings(
+        mapper = ObjectMapper.from_class(TestClassSomeProperty1, dict).custom_mappings(
             {"some_property": "mapped_property"})
 
         # when
@@ -36,7 +35,7 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
 
     def test_map_one_explicit_property_rev(self):
         # given
-        mapper = ObjectMapper(dict, TestClassSomeProperty1).custom_mappings(
+        mapper = ObjectMapper.from_class(dict, TestClassSomeProperty1).custom_mappings(
             {"mapped_property": "some_property"})
 
         # when
@@ -55,7 +54,7 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
 
     def test_map_multiple_explicit_properties(self):
         # given
-        mapper = ObjectMapper(dict, TestClassMappedProperty).custom_mappings(
+        mapper = ObjectMapper.from_class(dict, TestClassMappedProperty).custom_mappings(
                             {"some_property": "mapped_property",
                              "some_property_02": "mapped_property_02",
                              "some_property_03": "mapped_property_03"})

@@ -10,4 +10,5 @@ setup(name='MapperPy',
       url='https://github.com/lgrech/MapperPy',
       packages=['mapperpy'],
       install_requires=['enum34'],
+      tests_require=['assertpy'],
       keywords='object mapping')
