@@ -3,7 +3,7 @@ from assertpy import assert_that
 
 from mapperpy.test.common_test_classes import *
 
-from mapperpy import ObjectMapper
+from mapperpy import ObjectMapper, ConfigurationException
 
 __author__ = 'lgrech'
 
@@ -208,53 +208,76 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
         assert_that(mapped_object['some_property_03']).is_equal_to("some_value_03")
         assert_that(mapped_object).does_not_contain_key('unmapped_property1')
 
-    # def test_map_from_dict_when_ambiguous_nested_mapping_should_raise_exception(self):
-    #     # given
-    #     root_mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None).__dict__, TestClassSomeProperty2(None))
-    #     root_mapper.nested_mapper(
-    #         ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomePropertyEmptyInit2()))
-    #     root_mapper.nested_mapper(
-    #         ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit2().__dict__, TestClassSomeProperty2(None)))
-    #
-    #     with self.assertRaises(ConfigurationException) as context:
-    #         # when
-    #         root_mapper.map(dict(
-    #             some_property=dict(
-    #                 some_property="nested_value",
-    #                 some_property_02="nested_value_02",
-    #                 some_property_03="nested_value_03",
-    #                 unmapped_property1="unmapped_nested_value")))
+    def test_map_when_ambiguous_nested_mapping_should_raise_exception(self):
+        # given
+        root_mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None).__dict__, TestClassSomeProperty2(None))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomePropertyEmptyInit2()))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomeProperty2(None)))
 
+        # when
+        with self.assertRaises(ConfigurationException) as context:
+            root_mapper.map(dict(some_property=TestClassSomePropertyEmptyInit1().__dict__))
 
+        # then
+        assert_that(context.exception.message).contains("some_property")
+        assert_that(context.exception.message).contains("dict")
 
+    def test_map_explicit_when_ambiguous_nested_mapping_should_raise_exception(self):
+        # given
+        root_mapper = ObjectMapper.from_class(dict, TestClassMappedProperty).\
+            custom_mappings({"some_property": "mapped_property"})
 
+        root_mapper.nested_mapper(ObjectMapper.from_class(dict, TestClassSomePropertyEmptyInit2))
+        root_mapper.nested_mapper(ObjectMapper.from_class(dict, TestClassSomeProperty2))
 
-    # def test_map_from_dict_with_multiple_nested_mappers(self):
-    #     # given
-    #     root_mapper = ObjectMapper.from_prototype(TestClassSomeProperty1(None).__dict__, TestClassSomeProperty2(None))
-    #     root_mapper.nested_mapper(
-    #         ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomePropertyEmptyInit2()))
-    #
-    #     # when
-    #     mapped_object = root_mapper.map(dict(
-    #         some_property="some_value",
-    #         some_property_02=dict(
-    #             some_property="nested_value",
-    #             some_property_02="nested_value_02",
-    #             some_property_03="nested_value_03",
-    #             unmapped_property1="unmapped_nested_value"),
-    #         some_property_03="some_value_03",
-    #         unmapped_property1="unmapped_value"))
-    #
-    #     # then
-    #     assert_that(mapped_object).is_instance_of(TestClassSomeProperty2)
-    #     assert_that(mapped_object.some_property).is_equal_to("some_value")
-    #     assert_that(mapped_object.some_property_03).is_equal_to("some_value_03")
-    #     assert_that(mapped_object.unmapped_property2).is_none()
-    #
-    #     nested_mapped_obj = mapped_object.some_property_02
-    #     assert_that(nested_mapped_obj).is_instance_of(TestClassSomePropertyEmptyInit2)
-    #     assert_that(nested_mapped_obj.some_property).is_equal_to("nested_value")
-    #     assert_that(nested_mapped_obj.some_property_02).is_equal_to("nested_value_02")
-    #     assert_that(nested_mapped_obj.some_property_03).is_equal_to("nested_value_03")
-    #     assert_that(nested_mapped_obj.unmapped_property2).is_none()
+        # when
+        with self.assertRaises(ConfigurationException) as context:
+            root_mapper.map(dict(some_property=dict()))
+
+        # then
+        assert_that(context.exception.message).contains("some_property")
+        assert_that(context.exception.message).contains("mapped_property")
+        assert_that(context.exception.message).contains("dict")
+
+    def test_map_with_multiple_nested_mappings_when_no_matching_mapper_for_target_type_should_raise_exception(self):
+        # given
+        root_mapper = ObjectMapper.from_prototype(
+            TestClassSomeProperty1(None).__dict__,
+            TestClassSomeProperty2(some_property=TestClassMappedPropertyEmptyInit()))
+
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomeProperty2(None)))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomePropertyEmptyInit2()))
+
+        with self.assertRaises(ConfigurationException) as context:
+            root_mapper.map(dict(some_property=dict(some_property_02="nested_value_02")))
+
+        # then
+        assert_that(context.exception.message).contains("some_property")
+        assert_that(context.exception.message).contains("dict")
+        assert_that(context.exception.message).contains("TestClassMappedPropertyEmptyInit")
+
+    def test_map_with_multiple_nested_mappings_for_one_attribute_when_target_type_known(self):
+        # given
+        root_mapper = ObjectMapper.from_prototype(
+            TestClassSomeProperty1(None).__dict__,
+            TestClassSomeProperty2(some_property=TestClassSomePropertyEmptyInit2()))
+
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomeProperty2(None)))
+        root_mapper.nested_mapper(
+            ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1().__dict__, TestClassSomePropertyEmptyInit2()))
+
+        # when
+        mapped_object = root_mapper.map(dict(some_property=dict(some_property_02="nested_value_02")))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomeProperty2)
+
+        nested_mapped_obj = mapped_object.some_property
+        assert_that(nested_mapped_obj).is_not_none()
+        assert_that(nested_mapped_obj).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(nested_mapped_obj.some_property_02).is_equal_to("nested_value_02")

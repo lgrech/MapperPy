@@ -1,4 +1,5 @@
 import inspect
+from types import NoneType
 from enum import Enum
 from mapperpy.mapper_options import MapperOptions
 from mapperpy.exceptions import ConfigurationException
@@ -102,19 +103,20 @@ class OneWayMapper(object):
             if not (attr_name_from and attr_name_to):
                 continue
 
-            attr_value = self.__get_attribute_value(source_obj, attr_name_from)
-
-            from_type = type(attr_value)
-            to_type = type(self.__get_attribute_value(self.__target_prototype_obj, attr_name_to)) \
+            source_attr_value = self.__get_attribute_value(source_obj, attr_name_from)
+            target_proto_attr_value = self.__get_attribute_value(self.__target_prototype_obj, attr_name_to) \
                 if self.__target_prototype_obj else None
+
+            from_type = type(source_attr_value) if source_attr_value is not None else None
+            to_type = type(target_proto_attr_value) if target_proto_attr_value is not None else None
 
             if from_type in self.__nested_mappers:
                 mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
-                    attr_value, from_type, attr_name_from, to_type, attr_name_to)
+                    source_attr_value, from_type, attr_name_from, to_type, attr_name_to)
             elif to_type and to_type != from_type:
-                mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, attr_value)
+                mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, source_attr_value)
             else:
-                mapped_params_dict[attr_name_to] = attr_value
+                mapped_params_dict[attr_name_to] = source_attr_value
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
@@ -123,7 +125,7 @@ class OneWayMapper(object):
 
         if len(self.__nested_mappers[from_type]) == 1:
             return list(self.__nested_mappers[from_type])[0].map(attr_value)
-        elif to_type:
+        elif to_type is not None:
             applicable_mappers = [mpr for mpr in self.__nested_mappers[from_type] if mpr.target_class == to_type]
             if len(applicable_mappers) < 1:
                 raise ConfigurationException("{}. None of the available mappers ({}) matches target type {}".format(
