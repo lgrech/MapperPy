@@ -105,8 +105,8 @@ class OneWayMapper(object):
             attr_value = self.__get_attribute_value(source_obj, attr_name_from)
 
             from_type = type(attr_value)
-            to_type = type(
-                self.__get_attribute_value(self.__target_prototype_obj, attr_name_to)) if self.__target_prototype_obj else None
+            to_type = type(self.__get_attribute_value(self.__target_prototype_obj, attr_name_to)) \
+                if self.__target_prototype_obj else None
 
             if from_type in self.__nested_mappers:
                 mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
@@ -118,15 +118,22 @@ class OneWayMapper(object):
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
+        error_message = "Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for type {}".\
+            format(attr_name_from, attr_name_to, from_type.__name__)
+
         if len(self.__nested_mappers[from_type]) == 1:
             return list(self.__nested_mappers[from_type])[0].map(attr_value)
-        # TODO - but refactor first
-        # elif to_type:
-        #     applicable_mappers = [mpr for mpr in nested_mappers[from_type] if mpr.
+        elif to_type:
+            applicable_mappers = [mpr for mpr in self.__nested_mappers[from_type] if mpr.target_class == to_type]
+            if len(applicable_mappers) < 1:
+                raise ConfigurationException("{}. None of the available mappers ({}) matches target type {}".format(
+                    error_message,
+                    ", ".join(["{}{}".format(from_type.__name__, mpr) for mpr in self.__nested_mappers[from_type]]),
+                    to_type.__name__))
+            elif len(applicable_mappers) == 1:
+                return applicable_mappers[0].map(attr_value)
 
-
-        raise ConfigurationException("Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for "
-                                     "type {}".format(attr_name_from, attr_name_to, from_type.__name__))
+        raise ConfigurationException(error_message)
 
     @classmethod
     def __apply_conversion(cls, from_type, to_type, attr_value):
@@ -212,3 +219,6 @@ class OneWayMapper(object):
             return self.__general_settings[mapper_option.get_name()]
 
         return default_val
+
+    def __repr__(self):
+        return "->{}".format(self.__target_class.__name__)

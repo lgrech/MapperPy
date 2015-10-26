@@ -82,6 +82,9 @@ class ObjectMapper(object):
         self.__from_right_mapper.options(option)
         return self
 
+    def __repr__(self):
+        return "{}->{}".format(self.__from_right_mapper.target_class, self.__from_left_mapper.target_class)
+
     @classmethod
     def __get_mapped_name(cls, one_way_mapper, attr_name):
         try:
