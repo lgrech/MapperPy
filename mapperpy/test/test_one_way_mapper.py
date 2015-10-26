@@ -77,6 +77,17 @@ class OneWayMapperTest(unittest.TestCase):
         assert_that(mapped_object.some_property_03).is_equal_to("some_value_03")
         assert_that(mapped_object.unmapped_property2).is_none()
 
+    def test_map_from_none_attribute(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit2(some_property_02="3"))
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1(some_property_02=None))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(mapped_object.some_property_02).is_none()
+
     def test_map_implicit_with_prototype_obj(self):
         # given
         mapper = OneWayMapper.for_target_prototype(TestClassSomeProperty2(None))

@@ -50,7 +50,6 @@ class DateTimeConversionTest(unittest.TestCase):
             mapper.map(TestClassSomePropertyEmptyInit1(some_property_02="wrong_date_format"))
 
         # then
-        print(context.exception.message)
         assert_that(context.exception.message).contains("wrong_date_format")
 
     def test_map_from_string_to_datetime(self):

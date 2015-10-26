@@ -118,7 +118,7 @@ class OneWayMapper(object):
             if from_type in self.__nested_mappers:
                 mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
                     source_attr_value, from_type, attr_name_from, to_type, attr_name_to)
-            elif to_type and to_type != from_type:
+            elif from_type is not None and to_type is not None and to_type != from_type:
                 mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, source_attr_value)
             else:
                 mapped_params_dict[attr_name_to] = source_attr_value
@@ -194,8 +194,8 @@ class OneWayMapper(object):
 
     def __get_actual_mapping(self, obj):
 
-        common_attributes = \
-            self.__get_common_instance_attributes(obj, self.__target_prototype_obj) if self.__target_prototype_obj else []
+        common_attributes = self.__get_common_instance_attributes(obj, self.__target_prototype_obj) \
+            if self.__target_prototype_obj else []
 
         actual_mapping = {common_attr: common_attr for common_attr in common_attributes}
         actual_mapping.update(self.__explicit_mapping)
