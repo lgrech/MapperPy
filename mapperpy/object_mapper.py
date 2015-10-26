@@ -22,10 +22,16 @@ class ObjectMapper(object):
             OneWayMapper.for_target_class(left_class))
 
     @classmethod
-    def from_prototype(cls, left_proto, right_proto):
+    def from_prototype(cls, left_proto_obj, right_proto_obj):
         return ObjectMapper(
-            OneWayMapper.for_target_prototype(right_proto),
-            OneWayMapper.for_target_prototype(left_proto))
+            OneWayMapper.for_target_prototype(right_proto_obj),
+            OneWayMapper.for_target_prototype(left_proto_obj))
+
+    @classmethod
+    def for_dict(cls, left_proto_obj):
+        return ObjectMapper(
+            OneWayMapper.for_target_prototype(left_proto_obj.__dict__),
+            OneWayMapper.for_target_prototype(left_proto_obj))
 
     def map(self, obj):
         if isinstance(obj, self.__from_right_mapper.target_class):

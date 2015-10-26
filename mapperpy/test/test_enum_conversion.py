@@ -9,7 +9,7 @@ from mapperpy import ObjectMapper
 __author__ = 'lgrech'
 
 
-class EnumMappingTest(unittest.TestCase):
+class EnumConversionTest(unittest.TestCase):
 
     def test_enum_to_int_mapping_should_map_to_enum_value(self):
         # given

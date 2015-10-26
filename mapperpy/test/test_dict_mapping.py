@@ -281,3 +281,32 @@ class ObjectMapperDictMappingTest(unittest.TestCase):
         assert_that(nested_mapped_obj).is_not_none()
         assert_that(nested_mapped_obj).is_instance_of(TestClassSomePropertyEmptyInit2)
         assert_that(nested_mapped_obj.some_property_02).is_equal_to("nested_value_02")
+
+    def test_for_dict(self):
+        # given
+        mapper = ObjectMapper.for_dict(TestClassSomeProperty1(None))
+
+        # when
+        mapped_object = mapper.map(TestClassSomeProperty1(
+            some_property="some_value",
+            some_property_02="some_value_02",
+            some_property_03="some_value_03"))
+
+        # then
+        assert_that(mapped_object).is_instance_of(dict)
+        assert_that(mapped_object['some_property']).is_equal_to("some_value")
+        assert_that(mapped_object['some_property_02']).is_equal_to("some_value_02")
+        assert_that(mapped_object['some_property_03']).is_equal_to("some_value_03")
+
+        # when
+        mapped_object_rev = mapper.map(dict(
+            some_property="some_value",
+            some_property_02="some_value_02",
+            some_property_03="some_value_03"))
+
+        # then
+        assert_that(mapped_object_rev).is_instance_of(TestClassSomeProperty1)
+        assert_that(mapped_object_rev.some_property).is_equal_to("some_value")
+        assert_that(mapped_object_rev.some_property_02).is_equal_to("some_value_02")
+        assert_that(mapped_object_rev.some_property_03).is_equal_to("some_value_03")
+        assert_that(mapped_object_rev.unmapped_property1).is_none()
