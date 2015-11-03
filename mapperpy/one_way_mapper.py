@@ -148,9 +148,9 @@ class OneWayMapper(object):
             return cls.__get_conversion_from_enum(attr_value, to_type)
         elif issubclass(to_type, Enum):
             return cls.__get_conversion_to_enum(attr_value, from_type, to_type)
-        elif issubclass(from_type, datetime) and issubclass(to_type, str):
+        elif issubclass(from_type, datetime) and issubclass(to_type, basestring):
             return cls.__get_conversion_from_datetime(attr_value)
-        elif issubclass(from_type, str) and issubclass(to_type, datetime):
+        elif issubclass(from_type, basestring) and issubclass(to_type, datetime):
             return cls.__get_conversion_to_datetime(attr_value)
         return attr_value
 
@@ -169,7 +169,7 @@ class OneWayMapper(object):
     def __get_conversion_to_enum(cls, attr_value, from_type, to_enum_type):
         if from_type == int:
             return to_enum_type(attr_value)
-        elif from_type == str:
+        elif issubclass(from_type, basestring):
             # this tries to get enum item from Enum class
             return getattr(to_enum_type, attr_value)
         return attr_value
@@ -178,7 +178,7 @@ class OneWayMapper(object):
     def __get_conversion_from_enum(cls, attr_value, to_type):
         if to_type == int:
             return attr_value.value
-        elif to_type == str:
+        elif issubclass(to_type, basestring):
             return attr_value.name
         return attr_value
 

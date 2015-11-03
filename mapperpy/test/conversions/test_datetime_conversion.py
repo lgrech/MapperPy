@@ -96,3 +96,19 @@ class DateTimeConversionTest(unittest.TestCase):
         assert_that(mapped_object_rev.some_property_02).is_instance_of(str)
         assert_that(mapped_object_rev.some_property_02).is_equal_to(test_datetime.isoformat())
 
+    def test_map_from_unicode_string(self):
+        # given
+        mapper = ObjectMapper.from_prototype(TestClassSomePropertyEmptyInit1(),
+                                             TestClassSomePropertyEmptyInit2(some_property_02=datetime.now()))
+        test_datetime = datetime.now()
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1(
+            some_property="some_value",
+            some_property_02=unicode(test_datetime.isoformat())))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(mapped_object.some_property).is_equal_to("some_value")
+        assert_that(mapped_object.some_property_02).is_instance_of(datetime)
+        assert_that(mapped_object.some_property_02).is_equal_to(test_datetime)
