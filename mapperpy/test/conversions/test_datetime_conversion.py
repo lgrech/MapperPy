@@ -112,3 +112,31 @@ class DateTimeConversionTest(unittest.TestCase):
         assert_that(mapped_object.some_property).is_equal_to("some_value")
         assert_that(mapped_object.some_property_02).is_instance_of(datetime)
         assert_that(mapped_object.some_property_02).is_equal_to(test_datetime)
+
+    def test_map_string_without_millis_to_datetime(self):
+
+        # given
+        mapper = OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit2(some_property=datetime.now()))
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1(
+            some_property="2015-11-02T18:14:42"))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(mapped_object.some_property).is_instance_of(datetime)
+        assert_that(mapped_object.some_property).is_equal_to(datetime(2015, 11, 2, 18, 14, 42, 0))
+
+    def test_map_string_with_millis_to_datetime(self):
+
+        # given
+        mapper = OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit2(some_property=datetime.now()))
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1(
+            some_property="2015-11-02T18:14:42.000123"))
+
+        # then
+        assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
+        assert_that(mapped_object.some_property).is_instance_of(datetime)
+        assert_that(mapped_object.some_property).is_equal_to(datetime(2015, 11, 2, 18, 14, 42, 123))

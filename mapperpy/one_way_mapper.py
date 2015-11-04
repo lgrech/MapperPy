@@ -158,8 +158,12 @@ class OneWayMapper(object):
     def __get_conversion_to_datetime(cls, attr_value):
         try:
             return datetime.strptime(attr_value, "%Y-%m-%dT%H:%M:%S.%f")
-        except ValueError as e:
-            raise ValueError("Could not create datetime object from string: {}. {}".format(attr_value, e.message))
+        except ValueError as e1:
+            try:
+                return datetime.strptime(attr_value, "%Y-%m-%dT%H:%M:%S")
+            except ValueError as e2:
+                raise ValueError("Could not create datetime object from string: {}. {}. {}".format(
+                    attr_value, e1.message, e2.message))
 
     @classmethod
     def __get_conversion_from_datetime(cls, attr_value):
