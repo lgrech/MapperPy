@@ -481,3 +481,47 @@ class ObjectMapperTest(unittest.TestCase):
 
         # then
         assert_that(context.exception.message).contains("unmapped_property2")
+
+    def test_map_attr_value_when_unknown_target_class_should_raise_exception(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+                map_attr_value("some_property", "some_value", TestOtherClass)
+
+        # then
+        assert_that(context.exception.message).contains("TestOtherClass")
+
+    def test_map_attr_value_when_attr_name_unknown_should_raise_exception(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+                map_attr_value("unknown_property", "some_value", TestClassSomePropertyEmptyInit2)
+
+        # then
+        assert_that(context.exception.message).contains("unknown_property")
+
+    def test_map_attr_value_when_attr_name_unknown_should_raise_exception_rev(self):
+
+        # when
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+                map_attr_value("unknown_property", "some_value", TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(context.exception.message).contains("unknown_property")
+
+    def test_map_attr_value(self):
+        # when
+        mapped_value = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+                map_attr_value("some_property_02", "some_value", TestClassSomePropertyEmptyInit2)
+
+        # then
+        assert_that(mapped_value).is_equal_to("some_value")
+
+    def test_map_attr_value_rev(self):
+        # when
+        mapped_value = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).\
+                map_attr_value("some_property_02", "some_value", TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(mapped_value).is_equal_to("some_value")

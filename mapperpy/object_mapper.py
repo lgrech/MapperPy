@@ -53,6 +53,16 @@ class ObjectMapper(object):
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
 
+    def map_attr_value(self, attr_name, attr_value, target_class):
+
+        if self.__from_left_mapper.target_class == target_class:
+            return self.__from_left_mapper.map_attr_value(attr_name, attr_value)
+
+        if self.__from_right_mapper.target_class == target_class:
+            return self.__from_right_mapper.map_attr_value(attr_name, attr_value)
+
+        raise ValueError("This mapper does not support {} class".format(target_class.__name__))
+
     def custom_mappings(self, mapping_dict):
 
         mapping, rev_mapping = self.__get_explicit_mapping(mapping_dict)
