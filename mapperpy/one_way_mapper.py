@@ -45,6 +45,10 @@ class OneWayMapper(object):
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
 
+    def map_attr_value(self, attr_name, attr_value):
+        mapped_attr_name = self.map_attr_name(attr_name)
+        return self.__do_apply_mapping(attr_name, mapped_attr_name, attr_value)
+
     def custom_mappings(self, mapping_dict):
         self.__explicit_mapping.update(mapping_dict)
         return self

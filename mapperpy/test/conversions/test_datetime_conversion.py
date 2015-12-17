@@ -140,3 +140,19 @@ class DateTimeConversionTest(unittest.TestCase):
         assert_that(mapped_object).is_instance_of(TestClassSomePropertyEmptyInit2)
         assert_that(mapped_object.some_property).is_instance_of(datetime)
         assert_that(mapped_object.some_property).is_equal_to(datetime(2015, 11, 2, 18, 14, 42, 123))
+
+    def test_map_attr_value_with_string_to_datetime_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit1(some_property_02=datetime.now()))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", "2015-11-02T18:14:42")).is_equal_to(
+            datetime(2015, 11, 2, 18, 14, 42, 0))
+
+    def test_map_attr_value_with_datetime_to_string_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit1(some_property_02=""))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", datetime(2015, 11, 2, 18, 14, 42, 123))).is_equal_to(
+            "2015-11-02T18:14:42.000123")

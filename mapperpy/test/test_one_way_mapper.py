@@ -351,6 +351,18 @@ class OneWayMapperTest(unittest.TestCase):
         # then
         assert_that(context.exception.message).contains("unmapped_property")
 
+    def test_map_attr_name_for_opposite_way_should_raise_exception(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassMappedProperty).custom_mappings(
+            {"some_property": "mapped_property"})
+
+        # when
+        with self.assertRaises(ValueError) as context:
+            mapper.map_attr_name("mapped_property")
+
+        # then
+        assert_that(context.exception.message).contains("mapped_property")
+
     def test_map_attr_name_for_explicit_mapping(self):
         # given
         mapper = OneWayMapper.for_target_class(TestClassMappedProperty).custom_mappings(
@@ -396,3 +408,43 @@ class OneWayMapperTest(unittest.TestCase):
 
     def test_for_target_prototype(self):
         assert_that(OneWayMapper.for_target_prototype(object())).is_not_none()
+
+    def test_map_attr_value_when_unknown_attr_name_should_raise_exception(self):
+
+        # when
+        with self.assertRaises(ValueError) as context:
+            OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1).map_attr_value("unknown_attr", "some_value")
+
+        # then
+        assert_that(context.exception.message).contains("unknown_attr")
+
+    def test_map_attr_value_for_none_attr_name_should_raise_exception(self):
+
+        # when
+        with self.assertRaises(ValueError) as context:
+            OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1).map_attr_value(None, "some_value")
+
+        # then
+        assert_that(context.exception.message).contains("None")
+
+    def test_map_attr_value_for_none_value(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", None)).is_none()
+
+    def test_map_attr_value_with_default_mapping(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", "some_value")).is_equal_to("some_value")
+
+    def test_map_attr_value_with_custom_mapping(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassMappedPropertyEmptyInit).\
+            custom_mappings({"some_property_02": "mapped_property_02"})
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", "some_value")).is_equal_to("some_value")

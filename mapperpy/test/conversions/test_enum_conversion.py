@@ -1,10 +1,10 @@
 import unittest
 from assertpy import assert_that
+from enum import Enum
 
 from mapperpy.test.common_test_classes import *
 
-from enum import Enum
-from mapperpy import ObjectMapper
+from mapperpy import ObjectMapper, OneWayMapper
 
 __author__ = 'lgrech'
 
@@ -168,6 +168,38 @@ class EnumConversionTest(unittest.TestCase):
         assert_that(mapped_object).is_type_of(TestClassSomePropertyEmptyInit2)
         assert_that(mapped_object.some_property).is_type_of(str)
         assert_that(mapped_object.some_property).is_equal_to(SomeEnum.some_enum_02.name)
+
+    def test_map_attr_value_with_string_to_enum_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(
+            TestClassSomePropertyEmptyInit1(some_property_02=SomeEnum.some_enum_02))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", "some_enum_01")).is_equal_to(SomeEnum.some_enum_01)
+
+    def test_map_attr_value_with_enum_to_string_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(
+            TestClassSomePropertyEmptyInit1(some_property_02=""))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", SomeEnum.some_enum_01)).is_equal_to("some_enum_01")
+
+    def test_map_attr_value_with_int_to_enum_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(
+            TestClassSomePropertyEmptyInit1(some_property_02=SomeEnum.some_enum_02))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", 1)).is_equal_to(SomeEnum.some_enum_01)
+
+    def test_map_attr_value_with_enum_to_int_conversion(self):
+        # given
+        mapper = OneWayMapper.for_target_prototype(
+            TestClassSomePropertyEmptyInit1(some_property_02=7))
+
+        # then
+        assert_that(mapper.map_attr_value("some_property_02", SomeEnum.some_enum_01)).is_equal_to(1)
 
 
 class SomeEnum(Enum):
