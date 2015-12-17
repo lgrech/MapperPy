@@ -40,7 +40,7 @@ class OneWayMapper(object):
         if attr_name in self.__explicit_mapping:
             return self.__explicit_mapping[attr_name]
 
-        if self.__target_prototype_obj and hasattr(self.__target_prototype_obj, attr_name):
+        if self.__target_prototype_obj is not None and attr_name in self.__get_attributes(self.__target_prototype_obj):
             return attr_name
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
@@ -87,10 +87,10 @@ class OneWayMapper(object):
 
     def __get_mapped_params_dict(self, obj_from):
 
-        actual_mapping = self.__get_actual_mapping(obj_from)
+        actual_attr_name_mapping = self.__get_actual_attr_name_mapping(obj_from)
 
         try:
-            mapped_params_dict = self.__apply_mapping(obj_from, actual_mapping)
+            mapped_params_dict = self.__apply_mapping(obj_from, actual_attr_name_mapping)
             mapped_params_dict.update(self.__apply_initializers(obj_from))
             return mapped_params_dict
         except AttributeError as er:
@@ -104,30 +104,34 @@ class OneWayMapper(object):
 
         return initialized_params_dict
 
-    def __apply_mapping(self, source_obj, actual_mapping):
+    def __apply_mapping(self, source_obj, attr_name_mapping):
 
         mapped_params_dict = {}
 
-        for attr_name_from, attr_name_to in actual_mapping.items():
+        for attr_name_from, attr_name_to in attr_name_mapping.items():
             # skip since mapping is suppressed by user (attribute_name = None)
             if not (attr_name_from and attr_name_to):
                 continue
 
             source_attr_value = self.__get_attribute_value(source_obj, attr_name_from)
-            target_attr_value = self.__get_target_proto_attribute_value(attr_name_to)
-
-            from_type = self.__try_get_type(source_attr_value)
-            to_type = self.__try_get_type(target_attr_value)
-
-            if from_type in self.__nested_mappers:
-                mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
-                    source_attr_value, from_type, attr_name_from, to_type, attr_name_to)
-            elif from_type is not None and to_type is not None and to_type != from_type:
-                mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, source_attr_value)
-            else:
-                mapped_params_dict[attr_name_to] = source_attr_value
+            mapped_params_dict[attr_name_to] = self.__do_apply_mapping(attr_name_from, attr_name_to, source_attr_value)
 
         return mapped_params_dict
+
+    def __do_apply_mapping(self, attr_name_from, attr_name_to, source_attr_value):
+
+        target_attr_value = self.__get_target_proto_attribute_value(attr_name_to)
+
+        from_type = self.__try_get_type(source_attr_value)
+        to_type = self.__try_get_type(target_attr_value)
+
+        if from_type in self.__nested_mappers:
+            return self.__try_apply_nested_mapper(
+                source_attr_value, from_type, attr_name_from, to_type, attr_name_to)
+        elif from_type is not None and to_type is not None and to_type != from_type:
+            return self.__apply_conversion(from_type, to_type, source_attr_value)
+        else:
+            return source_attr_value
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
@@ -210,15 +214,15 @@ class OneWayMapper(object):
     def __try_get_type(cls, attr_value):
         return type(attr_value) if attr_value is not None else None
 
-    def __get_actual_mapping(self, obj):
+    def __get_actual_attr_name_mapping(self, obj):
 
         common_attributes = self.__get_common_instance_attributes(obj, self.__target_prototype_obj) \
             if self.__target_prototype_obj else []
 
-        actual_mapping = {common_attr: common_attr for common_attr in common_attributes}
-        actual_mapping.update(self.__explicit_mapping)
+        actual_attr_name_mapping = {common_attr: common_attr for common_attr in common_attributes}
+        actual_attr_name_mapping.update(self.__explicit_mapping)
 
-        return actual_mapping
+        return actual_attr_name_mapping
 
     @classmethod
     def __try_get_prototype(cls, prototype_obj, for_class):
