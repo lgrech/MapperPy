@@ -89,19 +89,24 @@ class OneWayMapper(object):
 
         actual_mapping = self.__get_actual_mapping(obj_from)
 
-        mapped_params_dict = {}
         try:
-            self.__apply_mapping(mapped_params_dict, obj_from, actual_mapping)
-            self.__apply_initializers(mapped_params_dict, obj_from)
+            mapped_params_dict = self.__apply_mapping(obj_from, actual_mapping)
+            mapped_params_dict.update(self.__apply_initializers(obj_from))
             return mapped_params_dict
         except AttributeError as er:
             raise AttributeError("Unknown attribute: {}".format(er.message))
 
-    def __apply_initializers(self, mapped_params_dict, source_obj):
-        for attr_name, init_func in self.__target_initializers.items():
-            mapped_params_dict[attr_name] = init_func(source_obj)
+    def __apply_initializers(self, source_obj):
+        initialized_params_dict = {}
 
-    def __apply_mapping(self, mapped_params_dict, source_obj, actual_mapping):
+        for attr_name, init_func in self.__target_initializers.items():
+            initialized_params_dict[attr_name] = init_func(source_obj)
+
+        return initialized_params_dict
+
+    def __apply_mapping(self, source_obj, actual_mapping):
+
+        mapped_params_dict = {}
 
         for attr_name_from, attr_name_to in actual_mapping.items():
             # skip since mapping is suppressed by user (attribute_name = None)
@@ -109,11 +114,10 @@ class OneWayMapper(object):
                 continue
 
             source_attr_value = self.__get_attribute_value(source_obj, attr_name_from)
-            target_proto_attr_value = self.__get_attribute_value(self.__target_prototype_obj, attr_name_to) \
-                if self.__target_prototype_obj else None
+            target_attr_value = self.__get_target_proto_attribute_value(attr_name_to)
 
-            from_type = type(source_attr_value) if source_attr_value is not None else None
-            to_type = type(target_proto_attr_value) if target_proto_attr_value is not None else None
+            from_type = self.__try_get_type(source_attr_value)
+            to_type = self.__try_get_type(target_attr_value)
 
             if from_type in self.__nested_mappers:
                 mapped_params_dict[attr_name_to] = self.__try_apply_nested_mapper(
@@ -122,6 +126,8 @@ class OneWayMapper(object):
                 mapped_params_dict[attr_name_to] = self.__apply_conversion(from_type, to_type, source_attr_value)
             else:
                 mapped_params_dict[attr_name_to] = source_attr_value
+
+        return mapped_params_dict
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
@@ -186,6 +192,10 @@ class OneWayMapper(object):
             return attr_value.name
         return attr_value
 
+    def __get_target_proto_attribute_value(self, attr_name):
+        return self.__get_attribute_value(self.__target_prototype_obj, attr_name) \
+            if self.__target_prototype_obj else None
+
     def __get_attribute_value(self, obj, attr_name):
         try:
             attr_value = obj[attr_name] if isinstance(obj, dict) else getattr(obj, attr_name)
@@ -195,6 +205,10 @@ class OneWayMapper(object):
             return None
 
         return attr_value
+
+    @classmethod
+    def __try_get_type(cls, attr_value):
+        return type(attr_value) if attr_value is not None else None
 
     def __get_actual_mapping(self, obj):
 
