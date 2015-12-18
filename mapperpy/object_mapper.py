@@ -62,25 +62,34 @@ class ObjectMapper(object):
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
 
-    def map_attr_value(self, attr_name, attr_value, mapping_direction):
+    def map_attr_value(self, attr_name, attr_value, mapping_direction=None, target_class=None):
         """
         :type attr_name: basestring
         :type attr_value: object
         :type mapping_direction: MappingDirection
+        :type target_class: type
         :rtype: object
         """
 
-        if mapping_direction == MappingDirection.left_to_right:
+        if mapping_direction is not None and target_class is not None\
+                or mapping_direction is None and target_class is None:
+            raise ValueError("Either mapping direction or target class has to be set (not both)")
+
+        if mapping_direction and mapping_direction == MappingDirection.left_to_right \
+                or target_class and target_class == self.__from_left_mapper.target_class:
             mapped_name = self.__get_mapped_name(self.__from_left_mapper, attr_name)
             if mapped_name and self.__get_mapped_name(self.__from_right_mapper, mapped_name) == attr_name:
                 return self.__from_left_mapper.map_attr_value(attr_name, attr_value)
-        else:
+
+        elif mapping_direction and mapping_direction == MappingDirection.right_to_left \
+                or target_class and target_class == self.__from_right_mapper.target_class:
             mapped_name = self.__get_mapped_name(self.__from_right_mapper, attr_name)
             if mapped_name and self.__get_mapped_name(self.__from_left_mapper, mapped_name) == attr_name:
                 return self.__from_right_mapper.map_attr_value(attr_name, attr_value)
 
         raise ValueError(
-            "Can't find mapping for attribute name: {}, direction: {}".format(attr_name, mapping_direction))
+            "Can't find mapping for attribute name: {}, direction: {}, target class: {}".format(
+                attr_name, mapping_direction, target_class.__name__ if target_class else None))
 
     def custom_mappings(self, mapping_dict):
 

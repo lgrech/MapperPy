@@ -540,3 +540,53 @@ class ObjectMapperTest(unittest.TestCase):
 
         # then
         assert_that(mapped_value).is_equal_to("some_value")
+
+    def test_map_attr_value_when_direction_and_target_set_should_raise_exception(self):
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).map_attr_value(
+                "some_property", "some_value", MappingDirection.left_to_right, TestClassSomePropertyEmptyInit2)
+
+    def test_map_attr_value_when_direction_nor_target_set_should_raise_exception(self):
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassSomePropertyEmptyInit2).map_attr_value(
+                "some_property", "some_value", None, None)
+
+    def test_map_attr_value_when_opposite_direction_for_class_should_raise_exception(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+                custom_mappings({"some_property_02": "mapped_property_02"}).\
+                map_attr_value("some_property_02", "some_value", target_class=TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(context.exception.message).contains("some_property_02")
+        assert_that(context.exception.message).contains("TestClassSomePropertyEmptyInit1")
+
+    def test_map_attr_value_when_opposite_direction_for_class_should_raise_exception_rev(self):
+        # when
+        with self.assertRaises(ValueError) as context:
+            ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+                custom_mappings({"some_property_02": "mapped_property_02"}).\
+                map_attr_value("mapped_property_02", "some_value", target_class=TestClassMappedPropertyEmptyInit)
+
+        # then
+        assert_that(context.exception.message).contains("mapped_property_02")
+        assert_that(context.exception.message).contains("TestClassMappedPropertyEmptyInit")
+
+    def test_map_attr_value_for_target_class(self):
+        # when
+        mapped_value = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+            custom_mappings({"some_property_02": "mapped_property_02"}).\
+            map_attr_value("some_property_02", "some_value", target_class=TestClassMappedPropertyEmptyInit)
+
+        # then
+        assert_that(mapped_value).is_equal_to("some_value")
+
+    def test_map_attr_value_for_target_class_rev(self):
+        # when
+        mapped_value = ObjectMapper.from_class(TestClassSomePropertyEmptyInit1, TestClassMappedPropertyEmptyInit).\
+            custom_mappings({"some_property_02": "mapped_property_02"}).\
+            map_attr_value("mapped_property_02", "some_value", target_class=TestClassSomePropertyEmptyInit1)
+
+        # then
+        assert_that(mapped_value).is_equal_to("some_value")
