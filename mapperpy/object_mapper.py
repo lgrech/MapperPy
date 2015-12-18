@@ -1,6 +1,12 @@
+from enum import Enum
 from mapperpy.one_way_mapper import OneWayMapper
 
 __author__ = 'lgrech'
+
+
+class MappingDirection(Enum):
+    left_to_right = 1
+    right_to_left = 2
 
 
 class ObjectMapper(object):
@@ -42,7 +48,10 @@ class ObjectMapper(object):
         raise ValueError("This mapper does not support {} class".format(obj.__class__.__name__))
 
     def map_attr_name(self, attr_name):
-
+        """
+        :type attr_name: basestring
+        :rtype: basestring
+        """
         mapped_name = self.__get_mapped_name(self.__from_left_mapper, attr_name)
         if mapped_name and self.__get_mapped_name(self.__from_right_mapper, mapped_name) == attr_name:
             return mapped_name
@@ -53,15 +62,25 @@ class ObjectMapper(object):
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
 
-    def map_attr_value(self, attr_name, attr_value, target_class):
+    def map_attr_value(self, attr_name, attr_value, mapping_direction):
+        """
+        :type attr_name: basestring
+        :type attr_value: object
+        :type mapping_direction: MappingDirection
+        :rtype: object
+        """
 
-        if self.__from_left_mapper.target_class == target_class:
-            return self.__from_left_mapper.map_attr_value(attr_name, attr_value)
+        if mapping_direction == MappingDirection.left_to_right:
+            mapped_name = self.__get_mapped_name(self.__from_left_mapper, attr_name)
+            if mapped_name and self.__get_mapped_name(self.__from_right_mapper, mapped_name) == attr_name:
+                return self.__from_left_mapper.map_attr_value(attr_name, attr_value)
+        else:
+            mapped_name = self.__get_mapped_name(self.__from_right_mapper, attr_name)
+            if mapped_name and self.__get_mapped_name(self.__from_left_mapper, mapped_name) == attr_name:
+                return self.__from_right_mapper.map_attr_value(attr_name, attr_value)
 
-        if self.__from_right_mapper.target_class == target_class:
-            return self.__from_right_mapper.map_attr_value(attr_name, attr_value)
-
-        raise ValueError("This mapper does not support {} class".format(target_class.__name__))
+        raise ValueError(
+            "Can't find mapping for attribute name: {}, direction: {}".format(attr_name, mapping_direction))
 
     def custom_mappings(self, mapping_dict):
 
