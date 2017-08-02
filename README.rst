@@ -1,10 +1,10 @@
-================
- MapperPy
-================
+========
+MapperPy
+========
 Python object mapper.
 
 Main features
-==============
+=============
 * Can map both ways
 * Automatically maps matching attributes
 * Allows to define custom mappings or override default ones
@@ -13,7 +13,7 @@ Main features
 * Supports nested mappers which are used automatically when attribute of specific type found
 
 Usage
-======
+=====
 
 Installation
 ------------
@@ -28,7 +28,7 @@ Importing
     from mapperpy import ObjectMapper
 
 Initialization
----------------
+--------------
 
 Creating mapper from class::
 
@@ -57,7 +57,7 @@ or::
 Mapper determines type of the instance automatically and maps it other type.
 
 Mapper customization
----------------------
+--------------------
 
 Custom mappings (**custom_mappings()**)::
 
@@ -76,8 +76,19 @@ Custom attribute initialization using function::
 Those functions will be used during initialization of ClassA (on the "left" side). Similarly *right_initializers* can be
 used to define initializers of ClassB (on the "right" side).
 
+Custom value conversion using function::
+
+    mapper = mapper.value_converters({
+                "some_property": (lambda val: json.dumps(val), lambda val: json.loads(val))})
+
+Those functions will be used during attribute mapping to convert attribute value.
+First function is used when mapping from "left" to "right" and second function is used in the opposite direction.
+When setting *value_converters* it's enough to provide only "left" attribute name, "right" attribute name is derived
+automatically. This also means that *value_converters* should be used after *custom_mappings* so attributes' names can
+be derived.
+
 Nested mappers
----------------
+--------------
 
 In case of more complex object structure you can use nested mappers.
 
@@ -89,7 +100,7 @@ define nested mapper and then attach it to root mapper::
     mapper = ObjectMapper.from_class(ClassA, ClassB).nested_mapper(nested_mapper)
 
 Mapping attribute name
------------------------
+----------------------
 
 If you want to determine mapped name of an attribute you can invoke::
 
@@ -106,3 +117,4 @@ result of::
 will be::
 
     mapped_property
+

@@ -121,6 +121,14 @@ class ObjectMapper(object):
         self.__from_left_mapper.target_initializers(initializers_dict)
         return self
 
+    def value_converters(self, converters_dict):
+        to_right_converters, to_left_converters = self.__split_converters(converters_dict)
+
+        self.__from_left_mapper.target_value_converters(to_right_converters)
+        self.__from_right_mapper.target_value_converters(to_left_converters)
+
+        return self
+
     def options(self, option):
         self.__from_left_mapper.options(option)
         self.__from_right_mapper.options(option)
@@ -151,3 +159,16 @@ class ObjectMapper(object):
                 rev_mapping[right] = left
 
         return mapping, rev_mapping
+
+    def __split_converters(self, converters_dict):
+        to_right_converters = {}
+        to_left_converters = {}
+
+        for left_attr_name, converters_tuple in converters_dict.iteritems():
+            if not isinstance(converters_tuple, tuple) or len(converters_tuple) != 2:
+                raise ValueError("Converters for {} should be provided in a 2-element tuple".format(left_attr_name))
+
+            to_right_converters[left_attr_name] = converters_tuple[0]
+            to_left_converters[self.__from_left_mapper.map_attr_name(left_attr_name)] = converters_tuple[1]
+
+        return to_right_converters, to_left_converters

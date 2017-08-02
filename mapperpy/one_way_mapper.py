@@ -15,6 +15,7 @@ class OneWayMapper(object):
         self.__explicit_mapping = {}
         self.__nested_mappers = {}
         self.__target_initializers = {}
+        self.__target_value_converters = {}
         self.__general_settings = {}
 
     @classmethod
@@ -71,7 +72,13 @@ class OneWayMapper(object):
         return self
 
     def target_initializers(self, initializers_dict):
+        self.__verify_if_callable(initializers_dict, "Initializer for {} is not callable")
         self.__target_initializers.update(initializers_dict)
+        return self
+
+    def target_value_converters(self, converters_dict):
+        self.__verify_if_callable(converters_dict, "Converter for {} is not callable")
+        self.__target_value_converters.update(converters_dict)
         return self
 
     def options(self, (setting_name, setting_value)):
@@ -129,11 +136,13 @@ class OneWayMapper(object):
         from_type = self.__try_get_type(source_attr_value)
         to_type = self.__try_get_type(target_attr_value)
 
-        if from_type in self.__nested_mappers:
+        if attr_name_from in self.__target_value_converters:
+            return self.__target_value_converters[attr_name_from](source_attr_value)
+        elif from_type in self.__nested_mappers:
             return self.__try_apply_nested_mapper(
                 source_attr_value, from_type, attr_name_from, to_type, attr_name_to)
         elif from_type is not None and to_type is not None and to_type != from_type:
-            return self.__apply_conversion(from_type, to_type, source_attr_value)
+            return self.__apply_type_conversion(from_type, to_type, source_attr_value)
         else:
             return source_attr_value
 
@@ -157,7 +166,7 @@ class OneWayMapper(object):
         raise ConfigurationException(error_message)
 
     @classmethod
-    def __apply_conversion(cls, from_type, to_type, attr_value):
+    def __apply_type_conversion(cls, from_type, to_type, attr_value):
         if issubclass(from_type, Enum):
             return cls.__get_conversion_from_enum(attr_value, to_type)
         elif issubclass(to_type, Enum):
@@ -267,6 +276,12 @@ class OneWayMapper(object):
             return self.__general_settings[mapper_option.get_name()]
 
         return default_val
+
+    @staticmethod
+    def __verify_if_callable(name_callable_map, error_message_template):
+        for name, obj in name_callable_map.iteritems():
+            if not callable(obj):
+                raise ValueError(error_message_template.format(name))
 
     def __repr__(self):
         return "->{}".format(self.__target_class.__name__)

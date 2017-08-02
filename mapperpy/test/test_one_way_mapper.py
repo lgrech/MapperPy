@@ -290,6 +290,13 @@ class OneWayMapperTest(unittest.TestCase):
         assert_that(mapped_object.some_property).is_none()
         assert_that(mapped_object.some_property_02).is_equal_to("some_value_02")
 
+    def test_map_with_custom_target_initializers_when_initializer_not_function_should_raise_exception(self):
+        with self.assertRaises(ValueError) as context:
+            OneWayMapper.for_target_prototype(TestClassSomePropertyEmptyInit1()).target_initializers(
+                {"some_property_02": 7}
+            )
+        assert_that(context.exception.message).contains("some_property_02")
+
     def test_map_with_custom_target_initializers(self):
         # given
         mapper = OneWayMapper.for_target_class(TestClassMappedPropertyEmptyInit).target_initializers({
