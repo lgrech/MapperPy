@@ -12,6 +12,8 @@ class OneWayMapper(object):
     def __init__(self, target_class, target_prototype_obj=None):
         self.__target_class = target_class
         self.__target_prototype_obj = self.__try_get_prototype(target_prototype_obj, self.__target_class)
+        self.__target_class_attrs = None
+        self.__source_class_attrs = None
         self.__explicit_mapping = {}
         self.__nested_mappers = {}
         self.__target_initializers = {}
@@ -65,7 +67,7 @@ class OneWayMapper(object):
 
         if mapper.target_class in [mpr.target_class for mpr in self.__nested_mappers[for_type]]:
             raise ConfigurationException("Nested mapping {}->{} already defined for this mapper".format(
-                    for_type.__name__, mapper.target_class.__name__))
+                for_type.__name__, mapper.target_class.__name__))
 
         self.__nested_mappers[for_type].add(mapper)
 
@@ -148,7 +150,7 @@ class OneWayMapper(object):
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
-        error_message = "Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for type {}".\
+        error_message = "Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for type {}". \
             format(attr_name_from, attr_name_to, from_type.__name__)
 
         if len(self.__nested_mappers[from_type]) == 1:
@@ -229,8 +231,7 @@ class OneWayMapper(object):
 
     def __get_actual_attr_name_mapping(self, obj):
 
-        common_attributes = self.__get_common_instance_attributes(obj, self.__target_prototype_obj) \
-            if self.__target_prototype_obj else []
+        common_attributes = self.__get_common_instance_attributes(obj) if self.__target_prototype_obj else []
 
         actual_attr_name_mapping = {common_attr: common_attr for common_attr in common_attributes}
         actual_attr_name_mapping.update(self.__explicit_mapping)
@@ -256,11 +257,12 @@ class OneWayMapper(object):
             # mapping won't work
             return None
 
-    @classmethod
-    def __get_common_instance_attributes(cls, from_obj, to_obj):
-        from_obj_attrs = cls.__get_attributes(from_obj)
-        to_obj_attrs = cls.__get_attributes(to_obj)
-        return set(from_obj_attrs).intersection(to_obj_attrs)
+    def __get_common_instance_attributes(self, from_obj):
+        if self.__target_class_attrs is None:
+            self.__target_class_attrs = set(self.__get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+        if self.__source_class_attrs is None:
+            self.__source_class_attrs = set(self.__get_attributes(from_obj))
+        return self.__source_class_attrs.intersection(self.__target_class_attrs)
 
     @classmethod
     def __get_attributes(cls, obj):
@@ -276,6 +278,10 @@ class OneWayMapper(object):
             return self.__general_settings[mapper_option.get_name()]
 
         return default_val
+
+    @classmethod
+    def __is_attribute(cls, member):
+        isinstance(object, types.MethodType)
 
     @staticmethod
     def __verify_if_callable(name_callable_map, error_message_template):
