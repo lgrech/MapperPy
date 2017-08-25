@@ -9,6 +9,12 @@ class TestClassSomePropertyEmptyInit1(object):
         self.unmapped_property1 = unmapped_property1
 
 
+class TestClassLessPropertiesEmptyInit1(object):
+    def __init__(self, some_property=None, some_property_03=None):
+        self.some_property = some_property
+        self.some_property_03 = some_property_03
+
+
 class TestClassSomePropertyEmptyInit2(object):
     def __init__(self, some_property=None, some_property_02=None, some_property_03=None, unmapped_property2=None):
         self.some_property = some_property

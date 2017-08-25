@@ -279,10 +279,6 @@ class OneWayMapper(object):
 
         return default_val
 
-    @classmethod
-    def __is_attribute(cls, member):
-        isinstance(object, types.MethodType)
-
     @staticmethod
     def __verify_if_callable(name_callable_map, error_message_template):
         for name, obj in name_callable_map.iteritems():
