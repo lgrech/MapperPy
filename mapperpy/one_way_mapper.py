@@ -11,9 +11,14 @@ class OneWayMapper(object):
 
     def __init__(self, target_class, target_prototype_obj=None):
         self.__target_class = target_class
-        self.__target_prototype_obj = self.__try_get_prototype(target_prototype_obj, self.__target_class)
-        self.__target_class_attrs = None
-        self.__source_class_attrs = None
+        self.__target_prototype_obj = \
+            target_prototype_obj if target_prototype_obj is not None else self.__try_create_prototype(target_class)
+        self.__discovered_target_class_attrs = \
+            set(self.__get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+
+        self.__cached_source_class = None
+        self.__cached_source_class_attrs = None
+
         self.__explicit_mapping = {}
         self.__nested_mappers = {}
         self.__target_initializers = {}
@@ -43,7 +48,7 @@ class OneWayMapper(object):
         if attr_name in self.__explicit_mapping:
             return self.__explicit_mapping[attr_name]
 
-        if self.__target_prototype_obj is not None and attr_name in self.__get_attributes(self.__target_prototype_obj):
+        if attr_name in self.__discovered_target_class_attrs:
             return attr_name
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
@@ -239,16 +244,6 @@ class OneWayMapper(object):
         return actual_attr_name_mapping
 
     @classmethod
-    def __try_get_prototype(cls, prototype_obj, for_class):
-
-        actual_prototype = prototype_obj
-
-        if not actual_prototype:
-            actual_prototype = cls.__try_create_prototype(for_class)
-
-        return actual_prototype
-
-    @classmethod
     def __try_create_prototype(cls, to_class):
         try:
             return to_class()
@@ -258,14 +253,24 @@ class OneWayMapper(object):
             return None
 
     def __get_common_instance_attributes(self, from_obj):
-        if self.__target_class_attrs is None:
-            self.__target_class_attrs = set(self.__get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
-        if self.__source_class_attrs is None:
-            self.__source_class_attrs = set(self.__get_attributes(from_obj))
-        return self.__source_class_attrs.intersection(self.__target_class_attrs)
+        source_class_attrs = self.__get_source_class_attrs(from_obj)
+        return source_class_attrs.intersection(self.__discovered_target_class_attrs)
 
-    @classmethod
-    def __get_attributes(cls, obj):
+    def __get_source_class_attrs(self, from_obj):
+        if isinstance(from_obj, dict):
+            return set(from_obj.keys())
+        elif self.__cached_source_class_attrs is not None and isinstance(from_obj, self.__cached_source_class):
+            return self.__cached_source_class_attrs
+        else:
+            self.__update_source_class_cache(from_obj)
+            return self.__cached_source_class_attrs
+
+    def __update_source_class_cache(self, from_obj):
+        self.__cached_source_class = type(from_obj)
+        self.__cached_source_class_attrs = set(self.__get_attributes(from_obj))
+
+    @staticmethod
+    def __get_attributes(obj):
 
         if isinstance(obj, dict):
             return obj.keys()
