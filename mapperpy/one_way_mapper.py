@@ -1,6 +1,7 @@
 from datetime import datetime
-import inspect
 from enum import Enum
+
+from mapperpy.attributes_util import AttributesCache, get_attributes
 from mapperpy.mapper_options import MapperOptions
 from mapperpy.exceptions import ConfigurationException
 
@@ -9,15 +10,14 @@ __author__ = 'lgrech'
 
 class OneWayMapper(object):
 
-    def __init__(self, target_class, target_prototype_obj=None):
+    def __init__(self, target_class, target_prototype_obj=None, attributes_cache_provider=AttributesCache):
         self.__target_class = target_class
         self.__target_prototype_obj = \
             target_prototype_obj if target_prototype_obj is not None else self.__try_create_prototype(target_class)
         self.__discovered_target_class_attrs = \
-            set(self.__get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+            set(get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
 
-        self.__cached_source_class = None
-        self.__cached_source_class_attrs = None
+        self.__source_attributes_cache = attributes_cache_provider()
 
         self.__explicit_mapping = {}
         self.__nested_mappers = {}
@@ -253,30 +253,8 @@ class OneWayMapper(object):
             return None
 
     def __get_common_instance_attributes(self, from_obj):
-        source_class_attrs = self.__get_source_class_attrs(from_obj)
+        source_class_attrs = self.__source_attributes_cache.get_attrs_update_cache(from_obj)
         return source_class_attrs.intersection(self.__discovered_target_class_attrs)
-
-    def __get_source_class_attrs(self, from_obj):
-        if isinstance(from_obj, dict):
-            return set(from_obj.keys())
-        elif self.__cached_source_class_attrs is not None and isinstance(from_obj, self.__cached_source_class):
-            return self.__cached_source_class_attrs
-        else:
-            self.__update_source_class_cache(from_obj)
-            return self.__cached_source_class_attrs
-
-    def __update_source_class_cache(self, from_obj):
-        self.__cached_source_class = type(from_obj)
-        self.__cached_source_class_attrs = set(self.__get_attributes(from_obj))
-
-    @staticmethod
-    def __get_attributes(obj):
-
-        if isinstance(obj, dict):
-            return obj.keys()
-
-        attributes = inspect.getmembers(obj, lambda a: not(inspect.isroutine(a)))
-        return [attr[0] for attr in attributes if not(attr[0].startswith('__') and attr[0].endswith('__'))]
 
     def __get_setting(self, mapper_option, default_val):
         if mapper_option.get_name() in self.__general_settings:
