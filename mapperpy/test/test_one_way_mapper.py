@@ -455,3 +455,75 @@ class OneWayMapperTest(unittest.TestCase):
 
         # then
         assert_that(mapper.map_attr_value("some_property_02", "some_value")).is_equal_to("some_value")
+
+    def test_map_different_source_dicts_less_attributes(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1)
+
+        # when
+        mapped_object = mapper.map(dict(some_property="some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        # when
+        mapped_object = mapper.map(dict(some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+    def test_map_different_source_dicts_more_attributes(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit1)
+
+        # when
+        mapped_object = mapper.map(dict(some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        # when
+        mapped_object = mapper.map(dict(some_property="some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+    def test_map_different_source_objects_less_attributes(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit2)
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1("some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_02).is_none()
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        # when
+        mapped_object = mapper.map(TestClassLessPropertiesEmptyInit1("some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+    def test_map_different_source_objects_more_attributes(self):
+        # given
+        mapper = OneWayMapper.for_target_class(TestClassSomePropertyEmptyInit2)
+
+        # when
+        mapped_object = mapper.map(TestClassLessPropertiesEmptyInit1("some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1("some_val", "some_val_02", "some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_02).is_equal_to("some_val_02")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
