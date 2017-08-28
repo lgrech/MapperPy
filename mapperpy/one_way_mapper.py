@@ -1,6 +1,7 @@
 from datetime import datetime
-import inspect
 from enum import Enum
+
+from mapperpy.attributes_util import AttributesCache, get_attributes
 from mapperpy.mapper_options import MapperOptions
 from mapperpy.exceptions import ConfigurationException
 
@@ -9,9 +10,15 @@ __author__ = 'lgrech'
 
 class OneWayMapper(object):
 
-    def __init__(self, target_class, target_prototype_obj=None):
+    def __init__(self, target_class, target_prototype_obj=None, attributes_cache_provider=AttributesCache):
         self.__target_class = target_class
-        self.__target_prototype_obj = self.__try_get_prototype(target_prototype_obj, self.__target_class)
+        self.__target_prototype_obj = \
+            target_prototype_obj if target_prototype_obj is not None else self.__try_create_prototype(target_class)
+        self.__discovered_target_class_attrs = \
+            set(get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+
+        self.__source_attributes_cache = attributes_cache_provider()
+
         self.__explicit_mapping = {}
         self.__nested_mappers = {}
         self.__target_initializers = {}
@@ -41,7 +48,7 @@ class OneWayMapper(object):
         if attr_name in self.__explicit_mapping:
             return self.__explicit_mapping[attr_name]
 
-        if self.__target_prototype_obj is not None and attr_name in self.__get_attributes(self.__target_prototype_obj):
+        if attr_name in self.__discovered_target_class_attrs:
             return attr_name
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
@@ -65,7 +72,7 @@ class OneWayMapper(object):
 
         if mapper.target_class in [mpr.target_class for mpr in self.__nested_mappers[for_type]]:
             raise ConfigurationException("Nested mapping {}->{} already defined for this mapper".format(
-                    for_type.__name__, mapper.target_class.__name__))
+                for_type.__name__, mapper.target_class.__name__))
 
         self.__nested_mappers[for_type].add(mapper)
 
@@ -148,7 +155,7 @@ class OneWayMapper(object):
 
     def __try_apply_nested_mapper(self, attr_value, from_type, attr_name_from, to_type, attr_name_to):
 
-        error_message = "Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for type {}".\
+        error_message = "Ambiguous nested mapping for attribute {}->{}. Too many mappings defined for type {}". \
             format(attr_name_from, attr_name_to, from_type.__name__)
 
         if len(self.__nested_mappers[from_type]) == 1:
@@ -229,23 +236,12 @@ class OneWayMapper(object):
 
     def __get_actual_attr_name_mapping(self, obj):
 
-        common_attributes = self.__get_common_instance_attributes(obj, self.__target_prototype_obj) \
-            if self.__target_prototype_obj else []
+        common_attributes = self.__get_common_instance_attributes(obj) if self.__target_prototype_obj else []
 
         actual_attr_name_mapping = {common_attr: common_attr for common_attr in common_attributes}
         actual_attr_name_mapping.update(self.__explicit_mapping)
 
         return actual_attr_name_mapping
-
-    @classmethod
-    def __try_get_prototype(cls, prototype_obj, for_class):
-
-        actual_prototype = prototype_obj
-
-        if not actual_prototype:
-            actual_prototype = cls.__try_create_prototype(for_class)
-
-        return actual_prototype
 
     @classmethod
     def __try_create_prototype(cls, to_class):
@@ -256,20 +252,9 @@ class OneWayMapper(object):
             # mapping won't work
             return None
 
-    @classmethod
-    def __get_common_instance_attributes(cls, from_obj, to_obj):
-        from_obj_attrs = cls.__get_attributes(from_obj)
-        to_obj_attrs = cls.__get_attributes(to_obj)
-        return set(from_obj_attrs).intersection(to_obj_attrs)
-
-    @classmethod
-    def __get_attributes(cls, obj):
-
-        if isinstance(obj, dict):
-            return obj.keys()
-
-        attributes = inspect.getmembers(obj, lambda a: not(inspect.isroutine(a)))
-        return [attr[0] for attr in attributes if not(attr[0].startswith('__') and attr[0].endswith('__'))]
+    def __get_common_instance_attributes(self, from_obj):
+        source_class_attrs = self.__source_attributes_cache.get_attrs_update_cache(from_obj)
+        return source_class_attrs.intersection(self.__discovered_target_class_attrs)
 
     def __get_setting(self, mapper_option, default_val):
         if mapper_option.get_name() in self.__general_settings:

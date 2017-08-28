@@ -1,6 +1,8 @@
 import unittest
 from assertpy import assert_that
+from mock import Mock
 
+from mapperpy.attributes_util import AttributesCache
 from mapperpy.test.common_test_classes import *
 
 from mapperpy import OneWayMapper, MapperOptions, ConfigurationException
@@ -527,3 +529,27 @@ class OneWayMapperTest(unittest.TestCase):
         assert_that(mapped_object.some_property).is_equal_to("some_val")
         assert_that(mapped_object.some_property_02).is_equal_to("some_val_02")
         assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+    def test_map_use_cached_source_attributes(self):
+        # given
+        get_attributes_func_mock = Mock(return_value=["some_property", "some_property_02", "some_property_03"])
+        attributes_cache = AttributesCache(get_attributes_func=get_attributes_func_mock)
+
+        mapper = OneWayMapper(TestClassSomePropertyEmptyInit2, attributes_cache_provider=lambda: attributes_cache)
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1("some_val", some_property_03="some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        # when
+        mapped_object = mapper.map(TestClassSomePropertyEmptyInit1("some_val", "some_val_02", "some_val_03"))
+
+        # then
+        assert_that(mapped_object.some_property).is_equal_to("some_val")
+        assert_that(mapped_object.some_property_02).is_equal_to("some_val_02")
+        assert_that(mapped_object.some_property_03).is_equal_to("some_val_03")
+
+        get_attributes_func_mock.assert_called_once()
