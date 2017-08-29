@@ -14,8 +14,7 @@ class OneWayMapper(object):
         self.__target_class = target_class
         self.__target_prototype_obj = \
             target_prototype_obj if target_prototype_obj is not None else self.__try_create_prototype(target_class)
-        self.__discovered_target_class_attrs = \
-            set(get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+        self.__discovered_target_class_attrs = None
 
         self.__source_attributes_cache = attributes_cache_provider()
 
@@ -48,7 +47,7 @@ class OneWayMapper(object):
         if attr_name in self.__explicit_mapping:
             return self.__explicit_mapping[attr_name]
 
-        if attr_name in self.__discovered_target_class_attrs:
+        if attr_name in self.__get_discovered_target_class_attributes():
             return attr_name
 
         raise ValueError("Can't find mapping for attribute name: {}".format(attr_name))
@@ -254,7 +253,14 @@ class OneWayMapper(object):
 
     def __get_common_instance_attributes(self, from_obj):
         source_class_attrs = self.__source_attributes_cache.get_attrs_update_cache(from_obj)
-        return source_class_attrs.intersection(self.__discovered_target_class_attrs)
+        return source_class_attrs.intersection(self.__get_discovered_target_class_attributes())
+
+    def __get_discovered_target_class_attributes(self):
+        if self.__discovered_target_class_attrs is None:
+            self.__discovered_target_class_attrs = \
+                set(get_attributes(self.__target_prototype_obj)) if self.__target_prototype_obj else set()
+
+        return self.__discovered_target_class_attrs
 
     def __get_setting(self, mapper_option, default_val):
         if mapper_option.get_name() in self.__general_settings:
